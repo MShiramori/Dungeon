@@ -13,11 +13,13 @@
     <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>Unity Subset v3.5</TargetFrameworkProfile>
-    <CompilerResponseFile></CompilerResponseFile>
+    <CompilerResponseFile>
+    </CompilerResponseFile>
     <UnityProjectType>Game:1</UnityProjectType>
     <UnityBuildTarget>StandaloneWindows64:19</UnityBuildTarget>
     <UnityVersion>2017.3.1f1</UnityVersion>
-    <RootNamespace></RootNamespace>
+    <RootNamespace>
+    </RootNamespace>
     <LangVersion>4</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -291,8 +293,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\Script\Components\CharacterObject.cs" />
-    <Compile Include="Assets\Script\Components\MapCellObject.cs" />
+    <Compile Include="Assets\Script\Components\CharacterPresenter.cs" />
+    <Compile Include="Assets\Script\Components\MapCellPresenter.cs" />
+    <Compile Include="Assets\Script\Components\MapObjectPresenter.cs" />
     <Compile Include="Assets\Script\Enums\DungeonConstants.cs" />
     <Compile Include="Assets\Script\Enums\DungeonEnums.cs" />
     <Compile Include="Assets\Script\Enums\SystemEnums.cs" />

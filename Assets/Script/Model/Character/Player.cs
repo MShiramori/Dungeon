@@ -35,12 +35,12 @@ namespace Assets.Script.Model
         public override void ResetViewPotition()
         {
             base.ResetViewPotition();
-            dungeon.MainCamera.transform.localPosition = new Vector3(this.Object.transform.localPosition.x, this.Object.transform.localPosition.y, 0);
+            dungeon.MainCamera.transform.localPosition = new Vector3(this.Presenter.transform.localPosition.x, this.Presenter.transform.localPosition.y, 0);
         }
 
         public override void MovingAnimationEveryFrameAction()
         {
-            dungeon.MainCamera.transform.localPosition = new Vector3(this.Object.transform.localPosition.x, this.Object.transform.localPosition.y, 0);
+            dungeon.MainCamera.transform.localPosition = new Vector3(this.Presenter.transform.localPosition.x, this.Presenter.transform.localPosition.y, 0);
         }
 
         /// <summary>

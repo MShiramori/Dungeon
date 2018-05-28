@@ -7,9 +7,9 @@ using UnityEngine;
 
 namespace Assets.Script.Components
 {
-    public class MapCellObject : MonoBehaviour
+    public class MapCellPresenter : MonoBehaviour
     {
-        public SpriteRenderer Renderer;
+        public SpriteRenderer Sprite;
 
         public Sprite FloorSprite;
         public Sprite WallSprite;
@@ -19,7 +19,7 @@ namespace Assets.Script.Components
         public void Initialized(MapCell cell)
         {
             this.Cell = cell;
-            this.Renderer.sprite = cell.Terra == Enums.Terrain.Wall ? WallSprite : FloorSprite;
+            this.Sprite.sprite = cell.Terra == Enums.Terrain.Wall ? WallSprite : FloorSprite;
         }
     }
 }

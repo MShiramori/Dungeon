@@ -16,7 +16,7 @@ namespace Assets.Script.Model
         private List<Passage> passages = new List<Passage>();
         private Random rnd = new Random();
 
-        public Dungeon CreateMap(Form sectionSize, Form SectionCount, int roomCount)
+        public void CreateMap(Form sectionSize, Form SectionCount, int roomCount)
         {
             MapSize = sectionSize * SectionCount;
 
@@ -50,7 +50,8 @@ namespace Assets.Script.Model
             //通路の位置設定
             InitializePassate();
 
-            return CreateMap();
+            //マップ情報を生成
+            CreateMapCore();
         }
 
         private bool CreatePasses()
@@ -164,9 +165,9 @@ namespace Assets.Script.Model
             }
         }
 
-        private Dungeon CreateMap()
+        private void CreateMapCore()
         {
-            var map = new MapCell[MapSize.x, MapSize.y];
+            Map = new MapCell[MapSize.x, MapSize.y];
             for (int y = 0; y < MapSize.y; y++)
             {
                 for (int x = 0; x < MapSize.x; x++)
@@ -182,28 +183,12 @@ namespace Assets.Script.Model
                         else t = Terrain.Passage;
                     }
                     else if (isPass) t = Terrain.Passage;
-                    map[x, y] = new MapCell(new Form(x, y), t);
+                    Map[x, y] = new MapCell(new Form(x, y), t);
                 }
             }
-            var rooms = sections.Where(x => !x.IsUnioned && x.Room != null && !x.Room.IsRelayPoint)
+            Rooms = sections.Where(x => !x.IsUnioned && x.Room != null && !x.Room.IsRelayPoint)
                                 .Select(x => x.Room)
                                 .ToArray();
-            var dungeon = new Dungeon(MapSize, map, rooms);
-
-            //階段生成
-            dungeon.AddObject(new Step() { IsNext = true });
-
-            //プレイヤー生成
-            dungeon.AddCharacter(new Player(dungeon));
-
-            //モンスター生成
-            var enemyCnt = new Random().Next(3, 6);
-            for (int i = 0; i < enemyCnt; i++)
-            {
-                dungeon.AddCharacter(new Enemy(dungeon, EnemyType.ゴブリン));
-            }
-
-            return dungeon;
         }
     }
 }

@@ -6,6 +6,7 @@ using System;
 using System.Linq;
 using Assets.Script.Enums;
 using UniRx;
+using Assets.Script.Components;
 
 namespace Assets.Script.Scene
 {
@@ -16,6 +17,8 @@ namespace Assets.Script.Scene
         public GameObject WallPrefab;
         public Transform CharacterRoot;
         public GameObject PlayerPrefab;
+        public Transform ObjectRoot;
+        public GameObject ObjectPrefab;
         public Camera MainCamera;
 
         private InputMode mode = InputMode.None;
@@ -26,17 +29,25 @@ namespace Assets.Script.Scene
         // Use this for initialization
         void Start()
         {
-            var generator = new DungeonMapGenerator();
-            dungeon = generator.CreateMap(new Form(10, 10), new Form(4, 4), new System.Random().Next(5, 10));
+            dungeon = new Dungeon();
             dungeon.MainCamera = this.MainCamera;
 
+            //マップ描画&プレイヤー＆敵配置
+            CreateAllObjects();
+
+            mode = InputMode.Waiting;
+            inputWait = 3;
+        }
+
+        private void CreateAllObjects()
+        {
             //マップ描画
             for (int x = 0; x < dungeon.MapSize.x; x++)
             {
                 for (int y = 0; y < dungeon.MapSize.y; y++)
                 {
                     GameObject obj;
-                    if(dungeon.MapData[x,y].Terra == Enums.Terrain.Wall)
+                    if (dungeon.MapData[x, y].Terra == Enums.Terrain.Wall)
                         obj = GameObject.Instantiate(WallPrefab);
                     else
                         obj = GameObject.Instantiate(FloorPrefab);
@@ -51,8 +62,11 @@ namespace Assets.Script.Scene
                 chara.InstantiateObject(PlayerPrefab, CharacterRoot);
             }
 
-            mode = InputMode.Waiting;
-            inputWait = 3;
+            //その他オブジェクト配置
+            foreach (var obj in dungeon.Objects)
+            {
+                obj.InstantiateObject(ObjectPrefab, ObjectRoot);
+            }
         }
 
         // Update is called once per frame
@@ -88,11 +102,35 @@ namespace Assets.Script.Scene
                         inputWait = 3;
                     }
                 }
-                //攻撃判定
+                
                 if (!isAction)
                 {
+                    //攻撃判定
                     if (Input.GetKey(KeyCode.Z))
+                    {
                         isAction |= dungeon.Player.Attack();
+                    }
+                    //階段を下りる
+                    else if (Input.GetKey(KeyCode.LeftShift))//コマンドは仮
+                    {
+                        //プレイヤーの位置にある階段を取得
+                        var step = dungeon.Objects.Where(x => x as Step != null && x.Position == dungeon.Player.Position).FirstOrDefault();
+                        if (step != null)
+                        {
+                            //TODO:削除しないでオブジェクトのリサイクル
+                            //全削除
+                            var cells = MapRoot.GetComponentsInChildren<SpriteRenderer>();
+                            for (int i = 0; i < cells.Length; i++) Destroy(cells[i].gameObject);
+                            var charas = CharacterRoot.GetComponentsInChildren<SpriteRenderer>();
+                            for (int i = 0; i < charas.Length; i++) Destroy(charas[i].gameObject);
+                            var objects = ObjectRoot.GetComponentsInChildren<SpriteRenderer>();
+                            for (int i = 0; i < objects.Length; i++) Destroy(objects[i].gameObject);
+                            //マップ再生成
+                            dungeon.UpdateFloor(dungeon.Floor + 1);
+                            dungeon.ResetMap();
+                            CreateAllObjects();
+                        }
+                    }
                 }
 
                 //ターン経過処理実行

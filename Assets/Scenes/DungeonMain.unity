@@ -113,6 +113,34 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &325741952
+GameObject:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  serializedVersion: 5
+  m_Component:
+  - component: {fileID: 325741953}
+  m_Layer: 0
+  m_Name: ObjectRoot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &325741953
+Transform:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 325741952}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 386684440}
+  m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &338434185
 GameObject:
   m_ObjectHideFlags: 0
@@ -192,7 +220,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 386684440}
-  m_RootOrder: 3
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &386684439
 GameObject:
@@ -222,6 +250,7 @@ Transform:
   m_Children:
   - {fileID: 1291011385}
   - {fileID: 1420999899}
+  - {fileID: 325741953}
   - {fileID: 600565689}
   - {fileID: 338434189}
   - {fileID: 1850915247}
@@ -245,6 +274,9 @@ MonoBehaviour:
   WallPrefab: {fileID: 1035820384681992, guid: de147954a8191fe40a48350a394bcf89, type: 2}
   CharacterRoot: {fileID: 1420999899}
   PlayerPrefab: {fileID: 1135122589730270, guid: 142a2da48c93b8d48848cbc53717f7c4,
+    type: 2}
+  ObjectRoot: {fileID: 325741953}
+  ObjectPrefab: {fileID: 1803278197362628, guid: 1f29c18496e83ec41b1b745b910ce4d1,
     type: 2}
   MainCamera: {fileID: 338434188}
 --- !u!1 &600565685
@@ -333,7 +365,7 @@ RectTransform:
   m_LocalScale: {x: 0, y: 0, z: 0}
   m_Children: []
   m_Father: {fileID: 386684440}
-  m_RootOrder: 2
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -456,5 +488,5 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 386684440}
-  m_RootOrder: 4
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

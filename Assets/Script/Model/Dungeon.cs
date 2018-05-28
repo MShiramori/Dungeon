@@ -17,15 +17,42 @@ namespace Assets.Script.Model
         public List<Character> Characters { get; private set; }
         public Character Player { get { return Characters.FirstOrDefault(x => x.Type == CharacterType.Player); } }
 
+        public int Floor { get; private set; }
+
         public Camera MainCamera { get; set; }
 
-        public Dungeon(Form mapSize, MapCell[,] mapData, Room[] rooms)
+        public Dungeon()
         {
-            this.MapSize = mapSize;
-            this.MapData = mapData;
-            this.Rooms = rooms;
             this.Objects = new List<MapObject>();
             this.Characters = new List<Character>();
+            ResetMap();
+            this.Floor = 1;
+        }
+
+        public void ResetMap()
+        {
+            this.Objects.Clear();
+            this.Characters.Clear();
+
+            var generator = new DungeonMapGenerator();
+            generator.CreateMap(new Form(10, 10), new Form(4, 4), UnityEngine.Random.Range(5, 10));
+
+            this.MapSize = generator.MapSize;
+            this.MapData = generator.Map;
+            this.Rooms = generator.Rooms;
+
+            //階段生成
+            AddObject(new Step(this) { IsNext = true });
+
+            //プレイヤー生成
+            AddCharacter(new Player(this));
+
+            //モンスター生成
+            var enemyCnt = UnityEngine.Random.Range(3, 6);
+            for (int i = 0; i < enemyCnt; i++)
+            {
+                AddCharacter(new Enemy(this, EnemyType.ゴブリン));
+            }
         }
 
         //MapObjectをID採番して追加
@@ -84,6 +111,11 @@ namespace Assets.Script.Model
             return MapData.Cast<MapCell>()
                     .Where(x => x.Terra == Enums.Terrain.Room && !Characters.Any(y => y.Position == x.Position))
                     .WaitedSample(x => 1);
+        }
+
+        public void UpdateFloor(int floor)
+        {
+            this.Floor = floor;
         }
     }
 }

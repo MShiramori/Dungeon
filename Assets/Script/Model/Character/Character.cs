@@ -25,7 +25,7 @@ namespace Assets.Script.Model
 
         public abstract CharacterType Type { get; }
         private List<CharacterAction> ReservedActions;
-        public CharacterObject Object { get; set; }
+        public CharacterPresenter Presenter { get; set; }
 
         private SerialDisposable spriteAnimationDisposable;
         protected Sprite[] sprites;
@@ -46,8 +46,9 @@ namespace Assets.Script.Model
         /// </summary>
         public virtual void InstantiateObject(GameObject prefab, Transform characterRoot)
         {
-            Object = GameObject.Instantiate(prefab).GetComponent<CharacterObject>();
-            Object.transform.SetParent(characterRoot, false);
+            Presenter = GameObject.Instantiate(prefab).GetComponent<CharacterPresenter>();
+            Presenter.transform.SetParent(characterRoot, false);
+            spriteAnimationDisposable.AddTo(Presenter);
             SetTexture();
             StartSpriteAnimation();
             ResetViewPotition();
@@ -137,10 +138,10 @@ namespace Assets.Script.Model
         /// </summary>
         public virtual void ResetViewPotition()
         {
-            if (Object == null) return;
+            if (Presenter == null) return;
 
-            Object.transform.localPosition = new Vector3(Position.x * 32 + 2, Position.y * -32, 0);
-            this.Object.Sprite.sortingOrder = 500 + this.Position.y;
+            Presenter.transform.localPosition = new Vector3(Position.x * 32 + 2, Position.y * -32, 0);
+            this.Presenter.Sprite.sortingOrder = 500 + this.Position.y;
         }
 
         /// <summary>
@@ -157,7 +158,7 @@ namespace Assets.Script.Model
             {
                 return Observable.EveryUpdate()
                     .Take(frame)
-                    .Do(i => this.Object.transform.localPosition = 
+                    .Do(i => this.Presenter.transform.localPosition = 
                         new Vector3(
                             (x.FromPosition.x + (x.DesPosition.x - x.FromPosition.x) * (float)(i + 1) / frame) * 32 + 2, 
                             (x.FromPosition.y + (x.DesPosition.y - x.FromPosition.y) * (float)(i + 1) / frame) * -32, 
@@ -202,7 +203,7 @@ namespace Assets.Script.Model
                     else if (i >= frame - 3) dis = 3 * (int)(frame - 1 - i);
                     else dis = 3 * 2;
                     var move = action.Direction * dis;
-                    this.Object.transform.localPosition =
+                    this.Presenter.transform.localPosition =
                         new Vector3(
                             this.Position.x * 32 + 2 + move.x,
                             this.Position.y * -32 - move.y,
@@ -252,7 +253,7 @@ namespace Assets.Script.Model
         protected void UpdateSpriteImage()
         {
             if (sprites == null || sprites.Length < 12) return;
-            Object.Sprite.sprite = sprites[spriteAnimationCurrentIndex + GetSpriteIndexByDirection()];
+            Presenter.Sprite.sprite = sprites[spriteAnimationCurrentIndex + GetSpriteIndexByDirection()];
         }
 
         /// <summary>
