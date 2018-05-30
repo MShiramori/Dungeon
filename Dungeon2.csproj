@@ -294,8 +294,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Script\Components\CharacterPresenter.cs" />
+    <Compile Include="Assets\Script\Components\HeaderUIPresenter.cs" />
     <Compile Include="Assets\Script\Components\MapCellPresenter.cs" />
     <Compile Include="Assets\Script\Components\MapObjectPresenter.cs" />
+    <Compile Include="Assets\Script\Database\FloorMaster.cs" />
+    <Compile Include="Assets\Script\Database\ItemMaster.cs" />
     <Compile Include="Assets\Script\Enums\DungeonConstants.cs" />
     <Compile Include="Assets\Script\Enums\DungeonEnums.cs" />
     <Compile Include="Assets\Script\Enums\SystemEnums.cs" />

@@ -19,6 +19,7 @@ namespace Assets.Script.Scene
         public GameObject PlayerPrefab;
         public Transform ObjectRoot;
         public GameObject ObjectPrefab;
+        public HeaderUIPresenter HeaderUI;
         public Camera MainCamera;
 
         private InputMode mode = InputMode.None;
@@ -34,6 +35,9 @@ namespace Assets.Script.Scene
 
             //マップ描画&プレイヤー＆敵配置
             CreateAllObjects();
+
+            //ヘッダ表示
+            HeaderUI.Initialized(dungeon);
 
             mode = InputMode.Waiting;
             inputWait = 3;

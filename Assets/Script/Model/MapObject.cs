@@ -1,4 +1,5 @@
 ﻿using Assets.Script.Components;
+using Assets.Script.Database;
 using Assets.Script.Enums;
 using System;
 using System.Collections.Generic;
@@ -81,13 +82,22 @@ namespace Assets.Script.Model
 
     public class Item : MapObject
     {
-        public ItemCategory Category { get; set; }
+        public int MasterId { get; private set; }
+        public ItemMaster Master { get; private set; }
+        public ItemCategory Category { get { return Master.Category; } }
+        public string Name { get { return Master.Name; } }
+        public int CountValue { get; set; }//装備の強化値、杖の回数、矢の本数など
 
-        public Item(Dungeon _dungeon) : base(_dungeon) { }
+        public Item(Dungeon _dungeon, int id) : base(_dungeon)
+        {
+            this.MasterId = id;
+            this.Master = DataBase.ItemMasters[id];
+            this.CountValue = 0;//TODO: 回数指定
+        }
 
         protected override void SetTexture()
         {
-            sprites = Resources.LoadAll<Sprite>(string.Format("Textures/Objects/test/steps"));
+            sprites = Resources.LoadAll<Sprite>(string.Format("Textures/Objects/test/sword"));
             UpdateSpriteImage();
         }
     }

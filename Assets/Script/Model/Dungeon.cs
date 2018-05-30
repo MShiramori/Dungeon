@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using UniRx;
 using UnityEngine;
 
 namespace Assets.Script.Model
@@ -15,18 +16,21 @@ namespace Assets.Script.Model
         public Room[] Rooms { get; private set; }
         public List<MapObject> Objects { get; private set; }
         public List<Character> Characters { get; private set; }
-        public Character Player { get { return Characters.FirstOrDefault(x => x.Type == CharacterType.Player); } }
+        public Player Player { get { return Characters.FirstOrDefault(x => x.Type == CharacterType.Player) as Player; } }
 
         public int Floor { get; private set; }
 
         public Camera MainCamera { get; set; }
 
+        public Subject<Unit> StatusUpdateEventTrigger { get; private set; }
+
         public Dungeon()
         {
             this.Objects = new List<MapObject>();
             this.Characters = new List<Character>();
-            ResetMap();
             this.Floor = 1;
+            ResetMap();
+            this.StatusUpdateEventTrigger = new Subject<Unit>();
         }
 
         public void ResetMap()
@@ -44,6 +48,15 @@ namespace Assets.Script.Model
             //階段生成
             AddObject(new Step(this) { IsNext = true });
 
+            //アイテム生成
+            var itemCnt = UnityEngine.Random.Range(4, 7);
+            for (int i = 0; i < itemCnt; i++)
+            {
+                //フロア情報から抽選
+                var itemId = Database.DataBase.FloorMasters[this.Floor].ItemTable.WaitedSample(x => x.Rate).ItemId;
+                AddObject(new Item(this, itemId));
+            }
+
             //プレイヤー生成
             AddCharacter(new Player(this));
 
@@ -51,6 +64,7 @@ namespace Assets.Script.Model
             var enemyCnt = UnityEngine.Random.Range(3, 6);
             for (int i = 0; i < enemyCnt; i++)
             {
+                //TODO: フロア情報から抽選
                 AddCharacter(new Enemy(this, EnemyType.ゴブリン));
             }
         }
@@ -116,6 +130,7 @@ namespace Assets.Script.Model
         public void UpdateFloor(int floor)
         {
             this.Floor = floor;
+            StatusUpdateEventTrigger.OnNext(Unit.Default);
         }
     }
 }
