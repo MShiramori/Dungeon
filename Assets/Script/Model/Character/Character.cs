@@ -14,9 +14,11 @@ namespace Assets.Script.Model
         public int UniqueId { get; private set; }
         public Form Position { get; private set; }
         public Form Direction { get; private set; }
-        public int HP { get; set; }
-        public int MaxHP { get; set; }
-        public int Speed { get; set; }
+        protected abstract CharacterParams Params { get; }
+        public int HP { get { return Params.HP; } set { Params.HP = value; } }
+        public int MaxHP { get { return Params.MaxHP; } set { Params.MaxHP = value; } }
+        public int Speed { get { return Params.Speed; } set { Params.Speed = value; } }
+        public List<Item> Items { get { return Params.Items; } }
         public int ActionWait { get; set; }
 
         protected const int MAX_WAIT = 120;
@@ -122,6 +124,25 @@ namespace Assets.Script.Model
             return true;
         }
 
+        /// <summary>
+        /// アイテムを拾う処理
+        /// </summary>
+        public bool PickUp(Item item)
+        {
+            var result = PickUpCore(item);
+            ReservedActions.Add(new CharacterItemPickup(item, result));//アイテム拾得行動情報を登録
+            return true;
+        }
+
+        /// <summary>
+        /// 拾う処理の実態
+        /// </summary>
+        /// <returns>拾うのに成功したか</returns>
+        protected virtual bool PickUpCore(Item item)
+        {
+            return false;
+        }
+
         public void SetPosition(Form position)
         {
             this.Position = position;
@@ -184,6 +205,8 @@ namespace Assets.Script.Model
             {
                 if (action as CharacterAttack != null)
                     actionList.Add(AttackAnimation(action as CharacterAttack));
+                else
+                    actionList.Add(Observable.ReturnUnit());
             }
             return actionList.Concat();
         }
@@ -323,6 +346,25 @@ namespace Assets.Script.Model
         public CharacterAttack(Form dir)
         {
             Direction = dir;
+        }
+    }
+
+    /// <summary>
+    /// アイテムを拾うアクション
+    /// </summary>
+    public class CharacterItemPickup : CharacterAction
+    {
+        //対象のアイテム
+        public Item TargetItem;
+
+        /// <summary>
+        /// コンストラクタ
+        /// </summary>
+        /// <param name="item">対象のアイテム</param>
+        /// <param name="isSuccess">拾えたかどうか</param>
+        public CharacterItemPickup(Item item, bool isSuccess)
+        {
+            TargetItem = item;
         }
     }
 }

@@ -114,6 +114,15 @@ namespace Assets.Script.Scene
                     {
                         isAction |= dungeon.Player.Attack();
                     }
+                    //アイテムを拾う
+                    if (Input.GetKey(KeyCode.P))
+                    {
+                        var item = dungeon.Objects.Where(x => x as Item != null && x.Position == dungeon.Player.Position).FirstOrDefault();
+                        if (item != null)
+                        {
+                            isAction |= dungeon.Player.PickUp(item as Item);
+                        }
+                    }
                     //階段を下りる
                     else if (Input.GetKey(KeyCode.LeftShift))//コマンドは仮
                     {

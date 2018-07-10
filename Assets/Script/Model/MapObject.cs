@@ -13,6 +13,7 @@ namespace Assets.Script.Model
     {
         public int UniqueId { get; set; }
         public Form Position { get; set; }
+        public abstract string Name { get; }
 
         public MapObjectPresenter Presenter { get; set; }
 
@@ -33,6 +34,15 @@ namespace Assets.Script.Model
             Presenter.transform.SetParent(objectRoot, false);
             SetTexture();
             ResetViewPotition();
+        }
+
+        /// <summary>
+        /// オブジェクトを消去する
+        /// </summary>
+        public void RemoveObject()
+        {
+            this.Position = new Form(-1, -1);
+            GameObject.Destroy(this.Presenter.gameObject);
         }
 
         /// <summary>
@@ -63,6 +73,7 @@ namespace Assets.Script.Model
 
     public class Step : MapObject
     {
+        public override string Name { get { return "階段"; } }
         public bool IsNext { get; set; }
 
         public Step(Dungeon _dungeon) : base(_dungeon) { }
@@ -82,10 +93,10 @@ namespace Assets.Script.Model
 
     public class Item : MapObject
     {
+        public override string Name { get { return GetName(); } }
         public int MasterId { get; private set; }
         public ItemMaster Master { get; private set; }
         public ItemCategory Category { get { return Master.Category; } }
-        public string Name { get { return Master.Name; } }
         public int CountValue { get; set; }//装備の強化値、杖の回数、矢の本数など
 
         public Item(Dungeon _dungeon, int id) : base(_dungeon)
@@ -100,10 +111,27 @@ namespace Assets.Script.Model
             sprites = Resources.LoadAll<Sprite>(string.Format("Textures/Objects/test/sword"));
             UpdateSpriteImage();
         }
+
+        private string GetName()
+        {
+            switch (Category)
+            {
+                case ItemCategory.Weapon:
+                case ItemCategory.Armor:
+                    if (CountValue == 0) return Master.Name;
+                    if (CountValue < 0) return Master.Name + CountValue.ToString();
+                    return Master.Name + "+" + CountValue.ToString();
+                case ItemCategory.Arrow:
+                case ItemCategory.rod:
+                    return string.Format("{0}[{1}]", Master.Name, CountValue);
+            }
+            return Master.Name;
+        }
     }
 
     public class Trap : MapObject
     {
+        public override string Name { get { return Type.ToString(); } }
         public TrapType Type { get; set; }
         public bool IsVisible { get; set; }
 

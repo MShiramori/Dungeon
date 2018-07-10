@@ -304,6 +304,7 @@
     <Compile Include="Assets\Script\Enums\SystemEnums.cs" />
     <Compile Include="Assets\Script\Extentions\EnumerableExtention.cs" />
     <Compile Include="Assets\Script\Model\Character\Character.cs" />
+    <Compile Include="Assets\Script\Model\Character\CharacterParams.cs" />
     <Compile Include="Assets\Script\Model\Character\Enemy.cs" />
     <Compile Include="Assets\Script\Model\Character\Player.cs" />
     <Compile Include="Assets\Script\Model\Dungeon.cs" />
@@ -314,6 +315,7 @@
     <Compile Include="Assets\Script\Model\Passage.cs" />
     <Compile Include="Assets\Script\Model\Room.cs" />
     <Compile Include="Assets\Script\Model\Section.cs" />
+    <Compile Include="Assets\Script\Model\StaticData.cs" />
     <Compile Include="Assets\Script\Scene\DungeonMainScene.cs" />
   </ItemGroup>
   <ItemGroup>

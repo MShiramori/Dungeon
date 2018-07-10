@@ -10,20 +10,27 @@ namespace Assets.Script.Model
 {
     public class Player : Character
     {
+        protected override CharacterParams Params { get { return StaticData.PlayerParams; } }
         public override CharacterType Type { get { return CharacterType.Player; } }
-        public string Name { get; set; }
-        public int Level { get; set; }
-        public int Stamina { get; set; }
-        public int MaxStamina { get; set; }
+        public string Name { get { return StaticData.PlayerParams.Name; } set { StaticData.PlayerParams.Name = value; } }
+        public int Level { get { return StaticData.PlayerParams.Level; } set { StaticData.PlayerParams.Level = value; } }
+        public int Stamina { get { return StaticData.PlayerParams.Stamina; } set { StaticData.PlayerParams.Stamina = value; } }
+        public int MaxStamina { get { return StaticData.PlayerParams.MaxStamina; } set { StaticData.PlayerParams.MaxStamina = value; } }
+
+        public const int MAX_ITEM_COUNT = 20;
 
         public Player(Dungeon _dungeon) : base(_dungeon)
         {
-            Level = 1;
-            HP = 30;
-            MaxHP = 30;
-            Speed = 8;
-            Stamina = 100;
-            MaxStamina = 100;
+            if (StaticData.PlayerParams == null)
+            {
+                StaticData.PlayerParams = new PlayerParams();
+                Level = 1;
+                HP = 30;
+                MaxHP = 30;
+                Speed = 8;
+                Stamina = 100;
+                MaxStamina = 100;
+            }
         }
 
         // コマンド入力を受けて行動する
@@ -41,6 +48,19 @@ namespace Assets.Script.Model
         public override void MovingAnimationEveryFrameAction()
         {
             dungeon.MainCamera.transform.localPosition = new Vector3(this.Presenter.transform.localPosition.x, this.Presenter.transform.localPosition.y, 0);
+        }
+
+        protected override bool PickUpCore(Item item)
+        {
+            if(item.Position == this.Position && this.Items.Count < MAX_ITEM_COUNT)
+            {
+                this.Items.Add(item);
+                item.RemoveObject();
+                Debug.LogFormat("{0}を拾った", item.Name);
+                return true;
+            }
+            Debug.LogFormat("持ち物がいっぱいで{0}を拾えなかった", item.Name);
+            return false;
         }
 
         /// <summary>

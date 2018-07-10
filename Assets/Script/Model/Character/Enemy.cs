@@ -9,11 +9,14 @@ namespace Assets.Script.Model
 {
     public class Enemy : Character
     {
+        protected override CharacterParams Params { get { return _params; } }
+        private EnemyParams _params;
         public override CharacterType Type { get { return CharacterType.Enemy; } }
         public EnemyType EnemyType { get; set; }
 
         public Enemy(Dungeon _dungeon, EnemyType type) : base(_dungeon)
         {
+            _params = new EnemyParams();
             EnemyType = type;
         }
 
