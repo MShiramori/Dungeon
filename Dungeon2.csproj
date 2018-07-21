@@ -309,12 +309,13 @@
     <Compile Include="Assets\Script\Model\Character\Player.cs" />
     <Compile Include="Assets\Script\Model\Dungeon.cs" />
     <Compile Include="Assets\Script\Model\DungeonMapGenerator.cs" />
-    <Compile Include="Assets\Script\Model\Form.cs" />
+    <Compile Include="Assets\Script\Model\General\Form.cs" />
+    <Compile Include="Assets\Script\Model\General\Message.cs" />
+    <Compile Include="Assets\Script\Model\Map\Passage.cs" />
+    <Compile Include="Assets\Script\Model\Map\Room.cs" />
+    <Compile Include="Assets\Script\Model\Map\Section.cs" />
     <Compile Include="Assets\Script\Model\MapCell.cs" />
     <Compile Include="Assets\Script\Model\MapObject.cs" />
-    <Compile Include="Assets\Script\Model\Passage.cs" />
-    <Compile Include="Assets\Script\Model\Room.cs" />
-    <Compile Include="Assets\Script\Model\Section.cs" />
     <Compile Include="Assets\Script\Model\StaticData.cs" />
     <Compile Include="Assets\Script\Scene\DungeonMainScene.cs" />
   </ItemGroup>

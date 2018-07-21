@@ -8,6 +8,7 @@ namespace Assets.Script.Model
     public class StaticData
     {
         public static PlayerParams PlayerParams;
+        public static Message Message;
 
         public static void SaveDatas()
         {

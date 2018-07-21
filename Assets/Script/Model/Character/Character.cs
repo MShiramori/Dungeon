@@ -15,6 +15,7 @@ namespace Assets.Script.Model
         public Form Position { get; private set; }
         public Form Direction { get; private set; }
         protected abstract CharacterParams Params { get; }
+        public string Name { get { return Params.Name; } set { Params.Name = value; } }
         public int HP { get { return Params.HP; } set { Params.HP = value; } }
         public int MaxHP { get { return Params.MaxHP; } set { Params.MaxHP = value; } }
         public int Speed { get { return Params.Speed; } set { Params.Speed = value; } }
@@ -109,7 +110,7 @@ namespace Assets.Script.Model
             SetDirection(destination - Position);
             if (CanMove(destination))
             {
-                ReservedActions.Add(new CharacterMove(this.Position, destination));//移動情報を登録
+                ReservedActions.Add(new CharacterMove(this, this.Position, destination));//移動情報を登録
                 SetPosition(destination);
                 return true;
             }
@@ -118,8 +119,25 @@ namespace Assets.Script.Model
 
         public bool Attack()
         {
-            ReservedActions.Add(new CharacterAttack(this.Direction));//攻撃情報を登録
-            //TODO: 攻撃処理
+            //攻撃処理
+            var action = new CharacterAttack(this, this.Direction);
+            var target = dungeon.Characters.FirstOrDefault(x => x.Position == this.Position + this.Direction);
+            if(target != null)
+            {
+                //命中判定
+                var isHit = (int)UnityEngine.Random.Range(0, 100) >= Mathf.Clamp(target.Params.Agi - this.Params.Dex + 20, 0, 95);
+                if (isHit)
+                {
+                    var damage = Mathf.Max(1, (int)((this.Params.Attack - target.Params.Defence / 2) * UnityEngine.Random.Range(0.95f, 1.05f)));
+                    action.SubActions.Add(new CharacterDamaged(target, this, damage, true));
+                }
+                else
+                {
+                    action.SubActions.Add(new CharacterDamaged(target, this, 0, false));
+                }
+            }
+
+            ReservedActions.Add(action);//攻撃情報を登録
 
             return true;
         }
@@ -130,7 +148,7 @@ namespace Assets.Script.Model
         public bool PickUp(Item item)
         {
             var result = PickUpCore(item);
-            ReservedActions.Add(new CharacterItemPickup(item, result));//アイテム拾得行動情報を登録
+            ReservedActions.Add(new CharacterItemPickup(this, item, result));//アイテム拾得行動情報を登録
             return true;
         }
 
@@ -203,10 +221,26 @@ namespace Assets.Script.Model
             var actionList = new List<IObservable<Unit>>();
             foreach (var action in actions)
             {
-                if (action as CharacterAttack != null)
-                    actionList.Add(AttackAnimation(action as CharacterAttack));
-                else
-                    actionList.Add(Observable.ReturnUnit());
+                var attackAction = action as CharacterAttack;
+                if (attackAction != null)
+                {
+                    actionList.Add(AttackAnimation(attackAction));
+                    continue;
+                }
+                var pickupAction = action as CharacterItemPickup;
+                if (pickupAction != null)
+                {
+                    actionList.Add(Observable.Defer(() =>
+                    {
+                        if (pickupAction.IsSuccess)
+                            StaticData.Message.ShowMessage(string.Format("{0}を拾った", pickupAction.TargetItem.Name), false);
+                        else
+                            StaticData.Message.ShowMessage(string.Format("持ち物がいっぱいで{0}を拾えなかった", pickupAction.TargetItem.Name), false);
+                        return Observable.ReturnUnit();
+                    }));
+                    continue;
+                }
+                actionList.Add(Observable.ReturnUnit());
             }
             return actionList.Concat();
         }
@@ -217,7 +251,7 @@ namespace Assets.Script.Model
         private IObservable<Unit> AttackAnimation(CharacterAttack action)
         {
             var frame = 16;
-            return Observable.EveryUpdate()
+            var attackAnimation = Observable.EveryUpdate()
                 .Take(frame)
                 .Do(i =>
                 {
@@ -231,6 +265,44 @@ namespace Assets.Script.Model
                             this.Position.x * 32 + 2 + move.x,
                             this.Position.y * -32 - move.y,
                             0);
+                })
+                .Last()
+                .AsUnitObservable();
+            var damageAnimation = Observable.TimerFrame(4)
+                .SelectMany(_ =>
+                {
+                    return action.SubActions
+                        .Where(x => x as CharacterDamaged != null)
+                        .Select(x => DamageAnimation(x as CharacterDamaged))
+                        .Concat();
+                });
+
+            return Observable.WhenAll(attackAnimation, damageAnimation);
+        }
+
+        /// <summary>
+        /// 被ダメージアニメーション
+        /// </summary>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        public IObservable<Unit> DamageAnimation(CharacterDamaged action)
+        {
+            if (!action.IsHit)
+            {
+                StaticData.Message.ShowMessage(string.Format("{0}の攻撃は外れた", action.Attacker.Name), false);
+                return Observable.TimerFrame(8).AsUnitObservable();
+            }
+
+            var frame = 16;
+            return Observable.EveryUpdate()
+                .Take(frame)
+                .Do(i =>
+                {
+                    //TODO: ダメージグラフィック
+                    if(i == 8)
+                    {
+                        StaticData.Message.ShowMessage(string.Format("{0}は{1}に{2}のダメージを与えた", action.Attacker.Name, action.Character.Name, action.Point), false);
+                    }
                 })
                 .Last()
                 .AsUnitObservable();
@@ -311,8 +383,14 @@ namespace Assets.Script.Model
     /// <summary>
     /// キャラクターの１アクション定義抽象型
     /// </summary>
-    public interface CharacterAction
+    public abstract class CharacterAction
     {
+        public Character Character { get; set; }
+
+        public CharacterAction(Character self)
+        {
+            Character = self;
+        }
     }
 
     /// <summary>
@@ -328,7 +406,7 @@ namespace Assets.Script.Model
         /// コンストラクタ
         /// </summary>
         /// <param name="des">移動先座標</param>
-        public CharacterMove(Form from, Form des)
+        public CharacterMove(Character self, Form from, Form des) : base(self)
         {
             FromPosition = from;
             DesPosition = des;
@@ -342,10 +420,12 @@ namespace Assets.Script.Model
     {
         //向き
         public Form Direction;
+        public List<CharacterAction> SubActions { get; private set; }
 
-        public CharacterAttack(Form dir)
+        public CharacterAttack(Character self, Form dir) : base(self)
         {
             Direction = dir;
+            SubActions = new List<CharacterAction>();
         }
     }
 
@@ -356,15 +436,34 @@ namespace Assets.Script.Model
     {
         //対象のアイテム
         public Item TargetItem;
+        public bool IsSuccess;
 
         /// <summary>
         /// コンストラクタ
         /// </summary>
         /// <param name="item">対象のアイテム</param>
         /// <param name="isSuccess">拾えたかどうか</param>
-        public CharacterItemPickup(Item item, bool isSuccess)
+        public CharacterItemPickup(Character self, Item item, bool isSuccess) : base(self)
         {
             TargetItem = item;
+            IsSuccess = isSuccess;
+        }
+    }
+
+    /// <summary>
+    /// ダメージを受けたアクション
+    /// </summary>
+    public class CharacterDamaged : CharacterAction
+    {
+        public Character Attacker { get; private set; }
+        public int Point { get; private set; }
+        public bool IsHit { get; private set; }
+
+        public CharacterDamaged(Character self, Character attacker, int point, bool isHit) : base(self)
+        {
+            this.Attacker = attacker;
+            this.Point = point;
+            this.IsHit = isHit;
         }
     }
 }

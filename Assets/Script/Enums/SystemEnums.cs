@@ -18,4 +18,11 @@ namespace Assets.Script.Enums
         Waiting = 1,
         OnAnimation = 2,
     }
+
+    public enum MessageMode
+    {
+        None = 0,
+        OnWaitTime = 1,
+        OnWaitInput = 2,
+    }
 }

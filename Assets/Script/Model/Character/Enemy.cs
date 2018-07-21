@@ -18,6 +18,16 @@ namespace Assets.Script.Model
         {
             _params = new EnemyParams();
             EnemyType = type;
+
+            //TODO: 種類ごとのパラメータ取得
+            Params.Name = "Noname";
+            HP = 5;
+            MaxHP = 5;
+            Speed = 8;
+            Params.Str = 0;
+            Params.Vit = 0;
+            Params.Dex = 0;
+            Params.Agi = 0;
         }
 
         // 行動処理

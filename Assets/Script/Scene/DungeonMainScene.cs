@@ -7,6 +7,7 @@ using System.Linq;
 using Assets.Script.Enums;
 using UniRx;
 using Assets.Script.Components;
+using UnityEngine.UI;
 
 namespace Assets.Script.Scene
 {
@@ -20,6 +21,7 @@ namespace Assets.Script.Scene
         public Transform ObjectRoot;
         public GameObject ObjectPrefab;
         public HeaderUIPresenter HeaderUI;
+        public Text MessageText;
         public Camera MainCamera;
 
         private InputMode mode = InputMode.None;
@@ -38,6 +40,9 @@ namespace Assets.Script.Scene
 
             //ヘッダ表示
             HeaderUI.Initialized(dungeon);
+
+            //メッセージ表示クラス初期化
+            StaticData.Message = new Message(MessageText);
 
             mode = InputMode.Waiting;
             inputWait = 3;
@@ -76,8 +81,15 @@ namespace Assets.Script.Scene
         // Update is called once per frame
         void Update()
         {
+            if(StaticData.Message.Mode != MessageMode.None)
+            {
+                if (Input.GetKey(KeyCode.Z))
+                {
+                    StaticData.Message.OnInput();
+                }
+            }
             //入力可能
-            if (mode == InputMode.Waiting)
+            else if (mode == InputMode.Waiting)
             {
                 var isAction = false;
 

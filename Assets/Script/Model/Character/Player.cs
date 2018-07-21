@@ -12,7 +12,6 @@ namespace Assets.Script.Model
     {
         protected override CharacterParams Params { get { return StaticData.PlayerParams; } }
         public override CharacterType Type { get { return CharacterType.Player; } }
-        public string Name { get { return StaticData.PlayerParams.Name; } set { StaticData.PlayerParams.Name = value; } }
         public int Level { get { return StaticData.PlayerParams.Level; } set { StaticData.PlayerParams.Level = value; } }
         public int Stamina { get { return StaticData.PlayerParams.Stamina; } set { StaticData.PlayerParams.Stamina = value; } }
         public int MaxStamina { get { return StaticData.PlayerParams.MaxStamina; } set { StaticData.PlayerParams.MaxStamina = value; } }
@@ -24,12 +23,17 @@ namespace Assets.Script.Model
             if (StaticData.PlayerParams == null)
             {
                 StaticData.PlayerParams = new PlayerParams();
+                Name = "プレイヤー";
                 Level = 1;
                 HP = 30;
                 MaxHP = 30;
                 Speed = 8;
                 Stamina = 100;
                 MaxStamina = 100;
+                Params.Str = 8;
+                Params.Vit = 0;
+                Params.Dex = 0;
+                Params.Agi = 0;
             }
         }
 
