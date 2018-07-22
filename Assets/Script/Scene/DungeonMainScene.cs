@@ -22,6 +22,7 @@ namespace Assets.Script.Scene
         public GameObject ObjectPrefab;
         public HeaderUIPresenter HeaderUI;
         public Text MessageText;
+        public WindowRootPresenter WindowRoot;
         public Camera MainCamera;
 
         private InputMode mode = InputMode.None;
@@ -43,6 +44,9 @@ namespace Assets.Script.Scene
 
             //メッセージ表示クラス初期化
             StaticData.Message = new Message(MessageText);
+
+            //ウィンドウクラス初期化
+            WindowRoot.Initialize();
 
             mode = InputMode.Waiting;
             inputWait = 3;
@@ -93,68 +97,80 @@ namespace Assets.Script.Scene
             {
                 var isAction = false;
 
-                //移動判定
+                if (WindowRoot.GetCurrentWindowType() == WindowType.None)
                 {
-                    var direction = new Form(0, 0);
-                    if (Input.GetKey(KeyCode.UpArrow))
-                        direction.y--;
-                    if (Input.GetKey(KeyCode.DownArrow))
-                        direction.y++;
-                    if (Input.GetKey(KeyCode.LeftArrow))
-                        direction.x--;
-                    if (Input.GetKey(KeyCode.RightArrow))
-                        direction.x++;
+                    //移動判定
+                    {
+                        var direction = new Form(0, 0);
+                        if (Input.GetKey(KeyCode.UpArrow))
+                            direction.y--;
+                        if (Input.GetKey(KeyCode.DownArrow))
+                            direction.y++;
+                        if (Input.GetKey(KeyCode.LeftArrow))
+                            direction.x--;
+                        if (Input.GetKey(KeyCode.RightArrow))
+                            direction.x++;
 
-                    var destination = dungeon.Player.Position + direction;
-                    if (direction.AbsTotal > 0)
-                    {
-                        if (inputWait <= 0)
-                            isAction |= dungeon.Player.Move(destination);
+                        var destination = dungeon.Player.Position + direction;
+                        if (direction.AbsTotal > 0)
+                        {
+                            if (inputWait <= 0)
+                                isAction |= dungeon.Player.Move(destination);
+                            else
+                                inputWait--;
+                        }
                         else
-                            inputWait--;
+                        {
+                            inputWait = 3;
+                        }
                     }
-                    else
+
+                    if (!isAction)
                     {
-                        inputWait = 3;
+                        //攻撃判定
+                        if (Input.GetKey(KeyCode.Z))
+                        {
+                            isAction |= dungeon.Player.Attack();
+                        }
+                        //アイテムを拾う
+                        if (Input.GetKey(KeyCode.P))
+                        {
+                            var item = dungeon.Objects.Where(x => x as Item != null && x.Position == dungeon.Player.Position).FirstOrDefault();
+                            if (item != null)
+                            {
+                                isAction |= dungeon.Player.PickUp(item as Item);
+                            }
+                        }
+                        //階段を下りる
+                        else if (Input.GetKey(KeyCode.LeftShift))//コマンドは仮
+                        {
+                            //プレイヤーの位置にある階段を取得
+                            var step = dungeon.Objects.Where(x => x as Step != null && x.Position == dungeon.Player.Position).FirstOrDefault();
+                            if (step != null)
+                            {
+                                //TODO:削除しないでオブジェクトのリサイクル
+                                //全削除
+                                var cells = MapRoot.GetComponentsInChildren<SpriteRenderer>();
+                                for (int i = 0; i < cells.Length; i++) Destroy(cells[i].gameObject);
+                                var charas = CharacterRoot.GetComponentsInChildren<SpriteRenderer>();
+                                for (int i = 0; i < charas.Length; i++) Destroy(charas[i].gameObject);
+                                var objects = ObjectRoot.GetComponentsInChildren<SpriteRenderer>();
+                                for (int i = 0; i < objects.Length; i++) Destroy(objects[i].gameObject);
+                                //マップ再生成
+                                dungeon.UpdateFloor(dungeon.Floor + 1);
+                                dungeon.ResetMap();
+                                CreateAllObjects();
+                            }
+                        }
                     }
                 }
-                
+
                 if (!isAction)
                 {
-                    //攻撃判定
-                    if (Input.GetKey(KeyCode.Z))
+                    //メニューボタン
+                    if (Input.GetKey(KeyCode.X))
                     {
-                        isAction |= dungeon.Player.Attack();
-                    }
-                    //アイテムを拾う
-                    if (Input.GetKey(KeyCode.P))
-                    {
-                        var item = dungeon.Objects.Where(x => x as Item != null && x.Position == dungeon.Player.Position).FirstOrDefault();
-                        if (item != null)
-                        {
-                            isAction |= dungeon.Player.PickUp(item as Item);
-                        }
-                    }
-                    //階段を下りる
-                    else if (Input.GetKey(KeyCode.LeftShift))//コマンドは仮
-                    {
-                        //プレイヤーの位置にある階段を取得
-                        var step = dungeon.Objects.Where(x => x as Step != null && x.Position == dungeon.Player.Position).FirstOrDefault();
-                        if (step != null)
-                        {
-                            //TODO:削除しないでオブジェクトのリサイクル
-                            //全削除
-                            var cells = MapRoot.GetComponentsInChildren<SpriteRenderer>();
-                            for (int i = 0; i < cells.Length; i++) Destroy(cells[i].gameObject);
-                            var charas = CharacterRoot.GetComponentsInChildren<SpriteRenderer>();
-                            for (int i = 0; i < charas.Length; i++) Destroy(charas[i].gameObject);
-                            var objects = ObjectRoot.GetComponentsInChildren<SpriteRenderer>();
-                            for (int i = 0; i < objects.Length; i++) Destroy(objects[i].gameObject);
-                            //マップ再生成
-                            dungeon.UpdateFloor(dungeon.Floor + 1);
-                            dungeon.ResetMap();
-                            CreateAllObjects();
-                        }
+                        WindowRoot.OnMenuButtonClick();
                     }
                 }
 

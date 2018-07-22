@@ -25,4 +25,15 @@ namespace Assets.Script.Enums
         OnWaitTime = 1,
         OnWaitInput = 2,
     }
+
+    /// <summary>
+    /// ウィンドウの種類
+    /// </summary>
+    public enum WindowType
+    {
+        None = 0,
+        MenuTop = 1,
+        Item = 2,
+        ItemCommand = 3,
+    }
 }

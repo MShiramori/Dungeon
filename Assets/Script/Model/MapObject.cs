@@ -127,6 +127,12 @@ namespace Assets.Script.Model
             }
             return Master.Name;
         }
+
+        public Sprite GetSprite()
+        {
+            if (sprites == null || !sprites.Any()) return null;
+            return sprites[0];
+        }
     }
 
     public class Trap : MapObject
