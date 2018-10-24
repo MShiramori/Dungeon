@@ -12,6 +12,7 @@ namespace Assets.Script.Model
 
         public int Count { get { return x * y; } }
         public int AbsTotal { get { return Math.Abs(x) + Math.Abs(y); } }
+        public int AbsMultiple { get { return Math.Abs(x * y); } }
 
         public Form(int x, int y)
         {
@@ -64,6 +65,11 @@ namespace Assets.Script.Model
             var dirx = x < 0 ? -1 : x > 0 ? 1 : 0;
             var diry = y < 0 ? -1 : y > 0 ? 1 : 0;
             return new Form(dirx, diry);
+        }
+
+        public override string ToString()
+        {
+            return string.Format("({0},{1})", x, y);
         }
     }
 }

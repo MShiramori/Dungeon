@@ -29,5 +29,10 @@ namespace Assets.Script.Model
         {
             return point.x >= Position.x && point.x <= EndPosition.x && point.y >= Position.y && point.y <= EndPosition.y;
         }
+
+        public bool OnRoomAround(Form point)
+        {
+            return point.x >= Position.x - 1 && point.x <= EndPosition.x + 1 && point.y >= Position.y - 1 && point.y <= EndPosition.y + 1;
+        }
     }
 }

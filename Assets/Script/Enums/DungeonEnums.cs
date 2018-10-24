@@ -18,11 +18,11 @@ namespace Assets.Script.Enums
         Weapon = 1,
         Armor = 2,
         Arrow = 3,
-        ring = 4,
+        Ring = 4,
         Food = 5,
         Potion = 6,
         Scroll = 7,
-        rod = 8,
+        Rod = 8,
     }
 
     public enum TrapType

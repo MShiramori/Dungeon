@@ -122,7 +122,7 @@ namespace Assets.Script.Model
                     if (CountValue < 0) return Master.Name + CountValue.ToString();
                     return Master.Name + "+" + CountValue.ToString();
                 case ItemCategory.Arrow:
-                case ItemCategory.rod:
+                case ItemCategory.Rod:
                     return string.Format("{0}[{1}]", Master.Name, CountValue);
             }
             return Master.Name;

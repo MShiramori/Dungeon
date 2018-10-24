@@ -196,6 +196,7 @@ namespace Assets.Script.Scene
                         .SelectMany(_ => Observable.WhenAll(dungeon.Characters.Select(x => x.MovingAnimation())))
                         //プレイヤー以外の移動以外のアクションを順次実行
                         .SelectMany(_ => dungeon.Characters.Where(x => x.Type != CharacterType.Player).Select(x => x.ActionAnimations()).Concat())
+                        .Last()
                         //後処理
                         .Do(x =>
                         {

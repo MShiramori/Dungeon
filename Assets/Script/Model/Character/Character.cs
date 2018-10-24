@@ -21,6 +21,7 @@ namespace Assets.Script.Model
         public int Speed { get { return Params.Speed; } set { Params.Speed = value; } }
         public List<Item> Items { get { return Params.Items; } }
         public int ActionWait { get; set; }
+        public bool IsDeath { get { return this.HP <= 0; } }
 
         protected const int MAX_WAIT = 120;
         private static int lastId = 0;
@@ -34,6 +35,8 @@ namespace Assets.Script.Model
         protected Sprite[] sprites;
         private long spriteAnimationCurrentIndex;
         private static Dictionary<Form, int> directionSpriteIndexis;
+        public static DirectionManager DirectionManager { get { return _directionManager == null ? _directionManager = new DirectionManager() : _directionManager; } }
+        private static DirectionManager _directionManager;
 
         public Character(Dungeon _dungeon)
         {
@@ -60,6 +63,8 @@ namespace Assets.Script.Model
         //　時間経過で行動ウェイトを減らし、ウェイトゼロになったら行動させる
         public bool Tick()
         {
+            if (this.IsDeath) return false; //死んでる
+
             ActionWait -= Speed;
             if (ActionWait <= 0)
             {
@@ -84,13 +89,24 @@ namespace Assets.Script.Model
                 return false;
 
             // 他キャラ衝突チェック
-            if (dungeon.Characters.Where(x => x != this).Any(x => x.Position == destination))
+            if (dungeon.Characters.Where(x => x != this && !x.IsDeath).Any(x => x.Position == destination))
                 return false;
 
             // 地形チェック
+            if (CheckWallForAction(destination))
+                return false;
+
+            return true;
+        }
+
+        /// <summary>
+        /// 移動・攻撃用壁判定
+        /// </summary>
+        protected bool CheckWallForAction(Form destination)
+        {
             var cell = dungeon.MapData[destination.x, destination.y];
             if (cell.Terra == Enums.Terrain.Wall)
-                return false;
+                return true;
             else
             {
                 var direction = destination - this.Position;
@@ -98,11 +114,10 @@ namespace Assets.Script.Model
                 {
                     if (dungeon.MapData[this.Position.x + direction.x, this.Position.y].Terra == Enums.Terrain.Wall
                         || dungeon.MapData[this.Position.x, this.Position.y + direction.y].Terra == Enums.Terrain.Wall)
-                        return false;
+                        return true;
                 }
             }
-
-            return true;
+            return false;
         }
 
         public bool Move(Form destination)
@@ -121,19 +136,21 @@ namespace Assets.Script.Model
         {
             //攻撃処理
             var action = new CharacterAttack(this, this.Direction);
-            var target = dungeon.Characters.FirstOrDefault(x => x.Position == this.Position + this.Direction);
-            if(target != null)
+            var des = this.Position + this.Direction;
+            var target = dungeon.Characters.FirstOrDefault(x => x.Position == des);
+            if(target != null && !target.IsDeath && !CheckWallForAction(des))
             {
                 //命中判定
                 var isHit = (int)UnityEngine.Random.Range(0, 100) >= Mathf.Clamp(target.Params.Agi - this.Params.Dex + 20, 0, 95);
                 if (isHit)
                 {
                     var damage = Mathf.Max(1, (int)((this.Params.Attack - target.Params.Defence / 2) * UnityEngine.Random.Range(0.95f, 1.05f)));
-                    action.SubActions.Add(new CharacterDamaged(target, this, damage, true));
+                    target.HP -= damage;
+                    action.SubActions.Add(new CharacterDamaged(target, this, damage, true, target.IsDeath));
                 }
                 else
                 {
-                    action.SubActions.Add(new CharacterDamaged(target, this, 0, false));
+                    action.SubActions.Add(new CharacterDamaged(target, this, 0, false, false));
                 }
             }
 
@@ -161,7 +178,7 @@ namespace Assets.Script.Model
             return false;
         }
 
-        public void SetPosition(Form position)
+        public virtual void SetPosition(Form position)
         {
             this.Position = position;
         }
@@ -301,10 +318,33 @@ namespace Assets.Script.Model
                     //TODO: ダメージグラフィック
                     if(i == 8)
                     {
-                        StaticData.Message.ShowMessage(string.Format("{0}は{1}に{2}のダメージを与えた", action.Attacker.Name, action.Character.Name, action.Point), false);
+                        if (action.Character as Player != null)
+                        {
+                            dungeon.StatusUpdateEventTrigger.OnNext(Unit.Default);
+                            StaticData.Message.ShowMessage(string.Format("{0}は{1}から{2}のダメージを受けた", action.Character.Name, action.Attacker.Name, action.Point), false);
+                        }
+                        else
+                            StaticData.Message.ShowMessage(string.Format("{0}は{1}に{2}のダメージを与えた", action.Attacker.Name, action.Character.Name, action.Point), false);
                     }
                 })
                 .Last()
+                .Do(x =>
+                {
+                    //死亡
+                    if (action.IsDeath)
+                    {
+                        action.Character.spriteAnimationDisposable.Dispose();
+                        GameObject.Destroy(action.Character.Presenter.gameObject);//TODO: リサイクルするなら初期化してプールに移動
+                        if (action.Character as Player != null)
+                        {
+                            StaticData.Message.ShowMessage(string.Format("{0}は力尽きた…", action.Character.Name), false);
+                        }
+                        else
+                        {
+                            StaticData.Message.ShowMessage(string.Format("{0}をやっつけた", action.Character.Name), false);
+                        }
+                    }
+                })
                 .AsUnitObservable();
         }
 
@@ -372,6 +412,22 @@ namespace Assets.Script.Model
             var idx = 0;
             directionSpriteIndexis.TryGetValue(this.Direction, out idx);
             return idx;
+        }
+
+        /// <summary>
+        /// 現在いる部屋を取得する
+        /// </summary>
+        public Room GetCurrentRoom()
+        {
+            return dungeon.Rooms.Where(x => x.OnRoom(this.Position)).FirstOrDefault();
+        }
+
+        /// <summary>
+        /// 現在いる位置が外周を含めた範囲にある部屋を取得する
+        /// </summary>
+        public Room GetCurrentRoomAround()
+        {
+            return dungeon.Rooms.Where(x => x.OnRoomAround(this.Position)).FirstOrDefault();
         }
 
         public void Dispose()
@@ -458,12 +514,57 @@ namespace Assets.Script.Model
         public Character Attacker { get; private set; }
         public int Point { get; private set; }
         public bool IsHit { get; private set; }
+        public bool IsDeath { get; private set; }
 
-        public CharacterDamaged(Character self, Character attacker, int point, bool isHit) : base(self)
+        public CharacterDamaged(Character self, Character attacker, int point, bool isHit, bool isDeath) : base(self)
         {
             this.Attacker = attacker;
             this.Point = point;
             this.IsHit = isHit;
+            this.IsDeath = isDeath;
+        }
+    }
+
+    public class DirectionManager
+    {
+        public Dictionary<int, Form> Directions;
+
+        public DirectionManager()
+        {
+            Directions = new Dictionary<int, Form>();
+            Directions.Add(0, new Form(1, 0));
+            Directions.Add(1, new Form(1, 1));
+            Directions.Add(2, new Form(0, 1));
+            Directions.Add(3, new Form(-1, 1));
+            Directions.Add(4, new Form(-1, 0));
+            Directions.Add(5, new Form(-1, -1));
+            Directions.Add(6, new Form(0, -1));
+            Directions.Add(7, new Form(1, -1));
+        }
+
+        public int GetId(Form direction)
+        {
+            return Directions.First(x => x.Value == direction).Key;
+        }
+
+        /// <summary>
+        /// 受け取った方向を基点としてその周囲の方向を近い方から順に一覧として取得する
+        /// </summary>
+        public List<Form> GetDirectionsForSearch(Form direction, bool isClockwise)
+        {
+            var baseId = GetId(direction);
+            var list = new List<Form>();
+            var coef = isClockwise ? 1 : -1;
+
+            list.Add(direction);
+            for (int i = 1; i < 4; i++)
+            {
+                list.Add(Directions[(baseId + i * coef + 8) % 8]);
+                list.Add(Directions[(baseId - i * coef + 8) % 8]);
+            }
+            list.Add(Directions[(baseId + 4) % 8]);//真後
+
+            return list;
         }
     }
 }

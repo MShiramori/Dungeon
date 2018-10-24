@@ -19,10 +19,12 @@ namespace Assets.Script.Model
         public virtual int Attack{ get { return Str; } }
         public virtual int Defence { get { return Vit; } }
         public List<Item> Items { get; private set; }
+        public Dictionary<ItemCategory, Item> Equips;
 
         public CharacterParams()
         {
             Items = new List<Item>();
+            Equips = new Dictionary<ItemCategory, Item>();
         }
     }
 
@@ -32,6 +34,11 @@ namespace Assets.Script.Model
         public int Stamina { get; set; }
         public int MaxStamina { get; set; }
         public override int Attack { get { return Str + Level; } }
+
+        public PlayerParams()
+        {
+            
+        }
     }
 
     public class EnemyParams : CharacterParams

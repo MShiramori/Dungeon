@@ -13,13 +13,11 @@
     <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>Unity Subset v3.5</TargetFrameworkProfile>
-    <CompilerResponseFile>
-    </CompilerResponseFile>
+    <CompilerResponseFile></CompilerResponseFile>
     <UnityProjectType>Game:1</UnityProjectType>
     <UnityBuildTarget>StandaloneWindows64:19</UnityBuildTarget>
     <UnityVersion>2017.3.1f1</UnityVersion>
-    <RootNamespace>
-    </RootNamespace>
+    <RootNamespace></RootNamespace>
     <LangVersion>4</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -301,8 +299,8 @@
     <Compile Include="Assets\Script\Components\Windows\ItemWindow.cs" />
     <Compile Include="Assets\Script\Components\Windows\ItemWindowRow.cs" />
     <Compile Include="Assets\Script\Components\Windows\Window.cs" />
-    <Compile Include="Assets\Script\Components\Windows\WindowRootPresenter.cs" />
     <Compile Include="Assets\Script\Components\Windows\WindowPrefabs.cs" />
+    <Compile Include="Assets\Script\Components\Windows\WindowRootPresenter.cs" />
     <Compile Include="Assets\Script\Database\FloorMaster.cs" />
     <Compile Include="Assets\Script\Database\ItemMaster.cs" />
     <Compile Include="Assets\Script\Enums\DungeonConstants.cs" />
@@ -328,7 +326,6 @@
   <ItemGroup>
     <None Include="Assets\Plugins\UniRx\ReadMe.txt" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="GenerateTargetFrameworkMonikerAttribute" />
 </Project>
