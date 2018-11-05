@@ -1,4 +1,5 @@
 ﻿using Assets.Script.Enums;
+using Assets.Script.Model.General;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -54,15 +55,42 @@ namespace Assets.Script.Model
             else if (destination == this.Position)
             {
                 //プレイヤーが視界におらず、目的地に到着していたら、とりあえず移動先を新たに設定
-                if (false)
+                var room = this.GetCurrentRoom();
+                if (room != null)
                 {
-                    //TODO:部屋にいるなら何れかの通路を目的地とする
+                    //部屋にいるなら何れかの通路を目的地とする
+                    var points = new List<Form>();
+                    for (int x = Mathf.Max(0, room.Position.x - 1); x <= Mathf.Min(dungeon.MapSize.x, room.EndPosition.x + 1); x++)
+                    {
+                        for (int y = Mathf.Max(0, room.Position.y - 1); y <= Mathf.Min(dungeon.MapSize.y, room.EndPosition.y + 1); y++)
+                        {
+                            if (dungeon.MapData[x, y].Terra == Enums.Terrain.Passage)
+                            {
+                                points.Add(new Form(x, y));
+                            }
+                        }
+                    }
+                    if (points.Any())
+                    {
+                        //入ってきた通路以外に通路があればランダムで選択、なければ戻る
+                        var back = this.Position + this.Direction * -1;
+                        var tmpTargets = points.Where(x => x != back).ToArray();
+                        if (tmpTargets.Any())
+                        {
+                            destination = tmpTargets[UnityEngine.Random.Range(0, tmpTargets.Length)];
+                        }
+                        else
+                        {
+                            destination = back;
+                        }
+                    }
                 }
                 else
                 {
                     //周囲から移動可能な場所を探す
                     var des = this.Position;
                     var dirs = Character.DirectionManager.GetDirectionsForSearch(this.Direction, UnityEngine.Random.Range(0, 256) < 128);
+                    dirs = dirs.Take(5).Shuffle().Concat(dirs.Skip(5)).ToList();
                     foreach (var dir in dirs)
                     {
                         if (CanMove(this.Position + dir))
@@ -90,7 +118,7 @@ namespace Assets.Script.Model
                 {
                     //移動可能な場所を探す
                     var tempDir = (destination - this.Position).GetDirection();
-                    var dirs = Character.DirectionManager.GetDirectionsForSearch(tempDir, UnityEngine.Random.Range(0, 256) < 128).Take(3);
+                    var dirs = Character.DirectionManager.GetDirectionsForSearch(tempDir, UnityEngine.Random.Range(0, 256) < 128).Take(5);
                     foreach (var dir in dirs)
                     {
                         if (CanMove(this.Position + dir))

@@ -272,6 +272,8 @@ MonoBehaviour:
   FloorPrefab: {fileID: 1126814716690486, guid: e624980726d7f5e49b290b07eaba1b0e,
     type: 2}
   WallPrefab: {fileID: 1035820384681992, guid: de147954a8191fe40a48350a394bcf89, type: 2}
+  PassagePrefab: {fileID: 1607628898907860, guid: 073afb36c7717f34db41432afd3c72f1,
+    type: 2}
   CharacterRoot: {fileID: 1420999899}
   PlayerPrefab: {fileID: 1135122589730270, guid: 142a2da48c93b8d48848cbc53717f7c4,
     type: 2}

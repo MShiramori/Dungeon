@@ -16,6 +16,7 @@ namespace Assets.Script.Scene
         public Transform MapRoot;
         public GameObject FloorPrefab;
         public GameObject WallPrefab;
+        public GameObject PassagePrefab;
         public Transform CharacterRoot;
         public GameObject PlayerPrefab;
         public Transform ObjectRoot;
@@ -62,6 +63,8 @@ namespace Assets.Script.Scene
                     GameObject obj;
                     if (dungeon.MapData[x, y].Terra == Enums.Terrain.Wall)
                         obj = GameObject.Instantiate(WallPrefab);
+                    else if (dungeon.MapData[x, y].Terra == Enums.Terrain.Passage)
+                        obj = GameObject.Instantiate(PassagePrefab);
                     else
                         obj = GameObject.Instantiate(FloorPrefab);
                     obj.transform.SetParent(MapRoot, false);
