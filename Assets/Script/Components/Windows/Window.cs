@@ -35,12 +35,26 @@ namespace Assets.Script.Components
             //閉じる
             if (Input.GetKey(KeyCode.X))
             {
-                var window = RootPresenter.ActiveWindows.Pop();
-                window.HideWindow();
+                CloseWindow();
                 return true;
             }
 
             return false;
+        }
+
+        public void CloseWindow()
+        {
+            var window = RootPresenter.ActiveWindows.Pop();
+            window.HideWindow();
+        }
+
+        public void CloseAllWindow()
+        {
+            foreach (var window in RootPresenter.ActiveWindows)
+            {
+                window.HideWindow();
+            }
+            RootPresenter.ActiveWindows.Clear();
         }
     }
 }

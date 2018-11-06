@@ -16,6 +16,7 @@ namespace Assets.Script.Model
         public float Stamina { get { return StaticData.PlayerParams.Stamina; } set { StaticData.PlayerParams.Stamina = value; } }
         public int MaxStamina { get { return StaticData.PlayerParams.MaxStamina; } set { StaticData.PlayerParams.MaxStamina = value; } }
         public Dictionary<ItemCategory, Item> Equips { get { return StaticData.PlayerParams.Equips; } }
+        public bool IsAction { get; set; }
 
         public const int MAX_ITEM_COUNT = 20;
 
@@ -43,6 +44,7 @@ namespace Assets.Script.Model
                 Equips.Add(ItemCategory.Ring, null);
 
                 flacHP = 0;
+                IsAction = false;
             }
         }
 
@@ -81,6 +83,7 @@ namespace Assets.Script.Model
         {
             if(item.Position == this.Position && this.Items.Count < MAX_ITEM_COUNT)
             {
+                //TODO:持ち物に入った時点でuniqueIdの管理とかおかしな感じになるのでオブジェクトと実体切り離してdungeonのリストから消去すべきではないかと愚考
                 this.Items.Add(item);
                 item.RemoveObject();
                 Debug.LogFormat("{0}を拾った", item.Name);
@@ -88,6 +91,35 @@ namespace Assets.Script.Model
             }
             Debug.LogFormat("持ち物がいっぱいで{0}を拾えなかった", item.Name);
             return false;
+        }
+
+        public bool PutItem(Item item)
+        {
+            var result = PutItemCore(item);
+            ReservedActions.Add(new CharacterItemPut(this, item, result));//アイテム置いた処理を登録
+            this.IsAction |= result;
+            return result;
+        }
+
+        public bool PutItemCore(Item item)
+        {
+            //持ってない
+            if (!Items.Contains(item))
+                return false;
+            //何かあったら置けない
+            if (dungeon.Objects.Any(x => x.Position == this.Position))
+                return false;
+
+            if (Equips[item.Category] == item)
+            {
+                Equips[item.Category] = null;
+            }
+            Items.Remove(item);
+
+            item.Position = this.Position;
+            item.InstantiateObject(dungeon.DungeonPrefabs.ObjectPrefab, dungeon.ObjectRoot);
+
+            return true;
         }
 
         /// <summary>

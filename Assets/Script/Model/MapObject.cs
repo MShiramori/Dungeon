@@ -106,6 +106,12 @@ namespace Assets.Script.Model
             this.CountValue = 0;//TODO: 回数指定
         }
 
+        public bool PutItem()
+        {
+            //TODO: プレイヤー以外にもやらせる場合どうするか要検討
+            return dungeon.Player.PutItem(this);
+        }
+
         protected override void SetTexture()
         {
             sprites = Resources.LoadAll<Sprite>(string.Format("Textures/Objects/test/sword"));

@@ -1,4 +1,5 @@
-﻿using Assets.Script.Enums;
+﻿using Assets.Script.Components;
+using Assets.Script.Enums;
 using Assets.Script.Extentions;
 using System;
 using System.Collections.Generic;
@@ -21,6 +22,10 @@ namespace Assets.Script.Model
         public int Floor { get; private set; }
 
         public Camera MainCamera { get; set; }
+        public Transform MapRoot { get; set; }
+        public Transform ObjectRoot { get; set; }
+        public Transform CharacterRoot { get; set; }
+        public DungeonPrefabs DungeonPrefabs { get; set; }
 
         public Subject<Unit> StatusUpdateEventTrigger { get; private set; }
 
@@ -28,9 +33,13 @@ namespace Assets.Script.Model
         {
             this.Objects = new List<MapObject>();
             this.Characters = new List<Character>();
+            this.StatusUpdateEventTrigger = new Subject<Unit>();
+        }
+
+        public void Initialize()
+        {
             this.Floor = 1;
             ResetMap();
-            this.StatusUpdateEventTrigger = new Subject<Unit>();
         }
 
         public void ResetMap()
@@ -66,6 +75,52 @@ namespace Assets.Script.Model
             {
                 //TODO: フロア情報から抽選
                 AddCharacter(new Enemy(this, EnemyType.ゴブリン));
+            }
+
+            //TODO:削除しないでオブジェクトのリサイクル
+            //オブジェクトを全削除
+            var cells = MapRoot.GetComponentsInChildren<SpriteRenderer>();
+            for (int i = 0; i < cells.Length; i++) GameObject.Destroy(cells[i].gameObject);
+            var charas = CharacterRoot.GetComponentsInChildren<SpriteRenderer>();
+            for (int i = 0; i < charas.Length; i++) GameObject.Destroy(charas[i].gameObject);
+            var objects = ObjectRoot.GetComponentsInChildren<SpriteRenderer>();
+            for (int i = 0; i < objects.Length; i++) GameObject.Destroy(objects[i].gameObject);
+
+            //プレイヤー＆敵オブジェクト配置
+            foreach (var chara in this.Characters)
+            {
+                chara.InstantiateObject(DungeonPrefabs.PlayerPrefab, CharacterRoot);
+            }
+
+            //その他オブジェクト配置
+            foreach (var obj in this.Objects)
+            {
+                obj.InstantiateObject(DungeonPrefabs.ObjectPrefab, ObjectRoot);
+            }
+
+            //マップ描画
+            CreateMap();
+        }
+
+        /// <summary>
+        /// マップ描画
+        /// </summary>
+        private void CreateMap()
+        {
+            for (int x = 0; x < this.MapSize.x; x++)
+            {
+                for (int y = 0; y < this.MapSize.y; y++)
+                {
+                    GameObject obj;
+                    if (this.MapData[x, y].Terra == Enums.Terrain.Wall)
+                        obj = GameObject.Instantiate(DungeonPrefabs.WallPrefab);
+                    else if (this.MapData[x, y].Terra == Enums.Terrain.Passage)
+                        obj = GameObject.Instantiate(DungeonPrefabs.PassagePrefab);
+                    else
+                        obj = GameObject.Instantiate(DungeonPrefabs.FloorPrefab);
+                    obj.transform.SetParent(MapRoot, false);
+                    obj.transform.localPosition = new Vector3(x * 32, y * -32, 0);
+                }
             }
         }
 

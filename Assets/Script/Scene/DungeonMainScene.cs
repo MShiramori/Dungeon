@@ -14,13 +14,9 @@ namespace Assets.Script.Scene
     public class DungeonMainScene : MonoBehaviour
     {
         public Transform MapRoot;
-        public GameObject FloorPrefab;
-        public GameObject WallPrefab;
-        public GameObject PassagePrefab;
         public Transform CharacterRoot;
-        public GameObject PlayerPrefab;
         public Transform ObjectRoot;
-        public GameObject ObjectPrefab;
+        public DungeonPrefabs DungeonPrefabs;
         public HeaderUIPresenter HeaderUI;
         public Text MessageText;
         public WindowRootPresenter WindowRoot;
@@ -36,9 +32,11 @@ namespace Assets.Script.Scene
         {
             dungeon = new Dungeon();
             dungeon.MainCamera = this.MainCamera;
-
-            //マップ描画&プレイヤー＆敵配置
-            CreateAllObjects();
+            dungeon.MapRoot = this.MapRoot;
+            dungeon.ObjectRoot = this.ObjectRoot;
+            dungeon.CharacterRoot = this.CharacterRoot;
+            dungeon.DungeonPrefabs = this.DungeonPrefabs;
+            dungeon.Initialize();
 
             //ヘッダ表示
             HeaderUI.Initialized(dungeon);
@@ -51,38 +49,6 @@ namespace Assets.Script.Scene
 
             mode = InputMode.Waiting;
             inputWait = 3;
-        }
-
-        private void CreateAllObjects()
-        {
-            //マップ描画
-            for (int x = 0; x < dungeon.MapSize.x; x++)
-            {
-                for (int y = 0; y < dungeon.MapSize.y; y++)
-                {
-                    GameObject obj;
-                    if (dungeon.MapData[x, y].Terra == Enums.Terrain.Wall)
-                        obj = GameObject.Instantiate(WallPrefab);
-                    else if (dungeon.MapData[x, y].Terra == Enums.Terrain.Passage)
-                        obj = GameObject.Instantiate(PassagePrefab);
-                    else
-                        obj = GameObject.Instantiate(FloorPrefab);
-                    obj.transform.SetParent(MapRoot, false);
-                    obj.transform.localPosition = new Vector3(x * 32, y * -32, 0);
-                }
-            }
-
-            //プレイヤー＆敵配置
-            foreach (var chara in dungeon.Characters)
-            {
-                chara.InstantiateObject(PlayerPrefab, CharacterRoot);
-            }
-
-            //その他オブジェクト配置
-            foreach (var obj in dungeon.Objects)
-            {
-                obj.InstantiateObject(ObjectPrefab, ObjectRoot);
-            }
         }
 
         // Update is called once per frame
@@ -98,8 +64,6 @@ namespace Assets.Script.Scene
             //入力可能
             else if (mode == InputMode.Waiting)
             {
-                var isAction = false;
-
                 if (WindowRoot.GetCurrentWindowType() == WindowType.None)
                 {
                     //移動判定
@@ -118,7 +82,7 @@ namespace Assets.Script.Scene
                         if (direction.AbsTotal > 0)
                         {
                             if (inputWait <= 0)
-                                isAction |= dungeon.Player.Move(destination);
+                                dungeon.Player.IsAction |= dungeon.Player.Move(destination);
                             else
                                 inputWait--;
                         }
@@ -128,12 +92,12 @@ namespace Assets.Script.Scene
                         }
                     }
 
-                    if (!isAction)
+                    if (!dungeon.Player.IsAction)
                     {
                         //攻撃判定
                         if (Input.GetKey(KeyCode.Z))
                         {
-                            isAction |= dungeon.Player.Attack();
+                            dungeon.Player.IsAction |= dungeon.Player.Attack();
                         }
                         //アイテムを拾う
                         if (Input.GetKey(KeyCode.P))
@@ -141,7 +105,7 @@ namespace Assets.Script.Scene
                             var item = dungeon.Objects.Where(x => x as Item != null && x.Position == dungeon.Player.Position).FirstOrDefault();
                             if (item != null)
                             {
-                                isAction |= dungeon.Player.PickUp(item as Item);
+                                dungeon.Player.IsAction |= dungeon.Player.PickUp(item as Item);
                             }
                         }
                         //階段を下りる
@@ -151,31 +115,22 @@ namespace Assets.Script.Scene
                             var step = dungeon.Objects.Where(x => x as Step != null && x.Position == dungeon.Player.Position).FirstOrDefault();
                             if (step != null)
                             {
-                                //TODO:削除しないでオブジェクトのリサイクル
-                                //全削除
-                                var cells = MapRoot.GetComponentsInChildren<SpriteRenderer>();
-                                for (int i = 0; i < cells.Length; i++) Destroy(cells[i].gameObject);
-                                var charas = CharacterRoot.GetComponentsInChildren<SpriteRenderer>();
-                                for (int i = 0; i < charas.Length; i++) Destroy(charas[i].gameObject);
-                                var objects = ObjectRoot.GetComponentsInChildren<SpriteRenderer>();
-                                for (int i = 0; i < objects.Length; i++) Destroy(objects[i].gameObject);
                                 //マップ再生成
                                 dungeon.UpdateFloor(dungeon.Floor + 1);
                                 dungeon.ResetMap();
-                                CreateAllObjects();
                             }
                         }
                     }
                 }
 
-                if (!isAction)
+                if (!dungeon.Player.IsAction)
                 {
                     //ウィンドウの入力チェック
                     WindowRoot.CheckInput();
                 }
 
                 //ターン経過処理実行
-                if (isAction)
+                if (dungeon.Player.IsAction)
                 {
                     //プレイヤーの行動時自動処理
                     dungeon.Player.AfterAction();
@@ -209,6 +164,7 @@ namespace Assets.Script.Scene
                                 chara.ResetActions();
                                 chara.ResetViewPotition();
                             }
+                            dungeon.Player.IsAction = false;
                             mode = InputMode.Waiting;//終わったので入力待機に戻す
                         })
                         .Subscribe()

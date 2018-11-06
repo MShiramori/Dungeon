@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using UniRx;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -21,6 +22,22 @@ namespace Assets.Script.Components
         private Item _model;
         private List<CommandRow> Commands = new List<CommandRow>();
 
+        //入力チェック
+        public override bool CheckInput()
+        {
+            //コマンドごとの処理を実行する
+            foreach (var row in Commands)
+            {
+                if (Input.GetKey(row.Key))
+                {
+                    row.Function();
+                    return true;
+                }
+            }
+
+            return base.CheckInput();
+        }
+
         public void UpdateInfo(Item model)
         {
             this._model = model;
@@ -33,23 +50,64 @@ namespace Assets.Script.Components
                 Destroy(child.gameObject);
             }
 
-            //TODO: アイテムの種類に応じたコマンドを追加する
+            //アイテムの種類に応じたコマンドを追加する
             Commands.Clear();
-            string[] itemcoms = new string[]{ "使う", "投げる", "置く" };//とりあえず適当に
+            var list = GetCommandList();
             var idx = 0;
-            foreach(var command in itemcoms)
+            foreach(var command in list)
             {
                 var row = Instantiate(CommandRowPrefab);
                 row.transform.SetParent(CommandRoot, false);
                 row.GetComponent<RectTransform>().localPosition = new Vector2(0, idx * -40);
-                row.SetCommand(command, idx);
-                row.Initialize(() => { return false; });//仮なので何もしない
+                row.SetCommand(command.Item1, idx);
+                row.Initialize(() => { return command.Item2(); });
                 Commands.Add(row);
                 idx++;
             }
 
             var rect = this.GetComponent<RectTransform>();
             rect.sizeDelta = new Vector2(rect.sizeDelta.x, 124 + Commands.Count() * 40);
+        }
+
+        /// <summary>
+        /// アイテムの種類に応じてコマンドを取得する
+        /// </summary>
+        /// <returns></returns>
+        private List<Tuple<string,Func<bool>>> GetCommandList()
+        {
+            var list = new List<Tuple<string, Func<bool>>>();
+
+            if(_model.Category == ItemCategory.Weapon 
+                || _model.Category == ItemCategory.Armor
+                || _model.Category == ItemCategory.Ring
+                || _model.Category == ItemCategory.Arrow)
+            {
+                list.Add(Tuple.Create<string, Func<bool>>("装備", () =>
+                {
+                    CloseAllWindow();
+                    return false;
+                }));
+            }
+
+            list.Add(Tuple.Create<string, Func<bool>>("投げる", () =>
+            {
+                CloseAllWindow();
+                return false;
+            }));
+
+            list.Add(Tuple.Create<string, Func<bool>>("置く", () =>
+            {
+                var result = _model.PutItem();
+                CloseAllWindow();
+                if (result)
+                {
+                    //TODO: ターン経過処理
+                }
+                //TODO: メッセージ表示
+                return result;
+            }));
+
+            return list;
         }
     }
 }

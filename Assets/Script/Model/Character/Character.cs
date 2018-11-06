@@ -28,7 +28,7 @@ namespace Assets.Script.Model
         protected Dungeon dungeon { get; set; }
 
         public abstract CharacterType Type { get; }
-        private List<CharacterAction> ReservedActions;
+        protected List<CharacterAction> ReservedActions;
         public CharacterPresenter Presenter { get; set; }
 
         private SerialDisposable spriteAnimationDisposable;
@@ -186,7 +186,7 @@ namespace Assets.Script.Model
         }
 
         /// <summary>
-        /// 拾う処理の実態
+        /// 拾う処理の実体
         /// </summary>
         /// <returns>拾うのに成功したか</returns>
         protected virtual bool PickUpCore(Item item)
@@ -269,6 +269,19 @@ namespace Assets.Script.Model
                             StaticData.Message.ShowMessage(string.Format("{0}を拾った", pickupAction.TargetItem.Name), false);
                         else
                             StaticData.Message.ShowMessage(string.Format("持ち物がいっぱいで{0}を拾えなかった", pickupAction.TargetItem.Name), false);
+                        return Observable.ReturnUnit();
+                    }));
+                    continue;
+                }
+                var putAction = action as CharacterItemPut;
+                if (putAction != null)
+                {
+                    actionList.Add(Observable.Defer(() =>
+                    {
+                        if (putAction.IsSuccess)
+                            StaticData.Message.ShowMessage(string.Format("{0}を置いた", putAction.TargetItem.Name), false);
+                        else
+                            StaticData.Message.ShowMessage(string.Format("ここには置けない"), false);
                         return Observable.ReturnUnit();
                     }));
                     continue;
@@ -516,6 +529,27 @@ namespace Assets.Script.Model
         /// <param name="item">対象のアイテム</param>
         /// <param name="isSuccess">拾えたかどうか</param>
         public CharacterItemPickup(Character self, Item item, bool isSuccess) : base(self)
+        {
+            TargetItem = item;
+            IsSuccess = isSuccess;
+        }
+    }
+
+    /// <summary>
+    /// アイテムを置くアクション
+    /// </summary>
+    public class CharacterItemPut : CharacterAction
+    {
+        //対象のアイテム
+        public Item TargetItem;
+        public bool IsSuccess;
+
+        /// <summary>
+        /// コンストラクタ
+        /// </summary>
+        /// <param name="item">対象のアイテム</param>
+        /// <param name="isSuccess">置けたかどうか</param>
+        public CharacterItemPut(Character self, Item item, bool isSuccess) : base(self)
         {
             TargetItem = item;
             IsSuccess = isSuccess;
