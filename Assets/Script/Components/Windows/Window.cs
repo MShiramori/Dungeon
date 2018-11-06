@@ -17,6 +17,8 @@ namespace Assets.Script.Components
         /// 表示優先度 ///
         public int Priority { get; set; }
 
+        public WindowRootPresenter RootPresenter;
+
         public virtual void ShowWindow()
         {
             this.gameObject.SetActive(true);
@@ -25,6 +27,20 @@ namespace Assets.Script.Components
         public virtual void HideWindow()
         {
             this.gameObject.SetActive(false);
+        }
+
+        //入力チェック
+        public virtual bool CheckInput()
+        {
+            //閉じる
+            if (Input.GetKey(KeyCode.X))
+            {
+                var window = RootPresenter.ActiveWindows.Pop();
+                window.HideWindow();
+                return true;
+            }
+
+            return false;
         }
     }
 }

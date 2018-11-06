@@ -1,6 +1,4 @@
-﻿using Assets.Script.Enums;
-using Assets.Script.Model;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,15 +8,13 @@ using UnityEngine.UI;
 
 namespace Assets.Script.Components
 {
-    public class ItemWindowRow : MonoBehaviour
+    public class CommandRow : MonoBehaviour
     {
         public Text KeyText;
-        public Image Icon;
         public Text NameText;
         public Button Button;
 
         public KeyCode Key { get; private set; }
-        public Item Model { get; private set; }
         public Func<bool> Function { get; private set; }
 
         private CompositeDisposable disposable;
@@ -35,14 +31,13 @@ namespace Assets.Script.Components
             }).AddTo(disposable);
         }
 
-        public void SetItem(Item item, int idx)
+        public void SetCommand(string name, int idx)
         {
             var master = Database.DataBase.KeyMaster[idx];
             this.Key = master.Item2;
             this.KeyText.text = string.Format("{0})", master.Item1);
-            this.Model = item;
-            this.Icon.sprite = item.GetSprite();
-            this.NameText.text = item.Name;
+            this.NameText.text = name;
+            
         }
 
         private void OnDestroy()

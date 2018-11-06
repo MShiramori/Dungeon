@@ -10,7 +10,6 @@ namespace Assets.Script.Components
     public class WindowRootPresenter : MonoBehaviour
     {
         public ItemWindow ItemWindow;
-        public ItemCommandWindow ItemCommandWindow;
 
         public Stack<Window> ActiveWindows = new Stack<Window>();
 
@@ -34,28 +33,33 @@ namespace Assets.Script.Components
             return ActiveWindows.Peek().Type;
         }
 
-        public void OnMenuButtonClick()
+        /// <summary>
+        /// 入力チェック
+        /// </summary>
+        public void CheckInput()
         {
             if (inputWait > 0)
                 return;
 
             var type = GetCurrentWindowType();
-            switch (type)
+            if (type == WindowType.None)
             {
-                case WindowType.None:
+                //メニューを開く
+                if (Input.GetKey(KeyCode.X))
+                {
                     ActiveWindows.Push(ItemWindow);
                     ItemWindow.ShowWindow();
-                    break;
-                case WindowType.Item:
-                    ItemWindow.HideWindow();
-                    ActiveWindows.Pop();
-                    break;
-                case WindowType.ItemCommand:
-                    ItemCommandWindow.HideWindow();
-                    ActiveWindows.Pop();
-                    break;
+                    inputWait = 10;
+                }
             }
-            inputWait = 10;
+            else
+            {
+                //開いているウィンドウの入力チェック
+                if (ActiveWindows.Peek().CheckInput())
+                {
+                    inputWait = 10;
+                }
+            }
         }
     }
 }

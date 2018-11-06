@@ -297,6 +297,7 @@
     <Compile Include="Assets\Script\Components\HeaderUIPresenter.cs" />
     <Compile Include="Assets\Script\Components\MapCellPresenter.cs" />
     <Compile Include="Assets\Script\Components\MapObjectPresenter.cs" />
+    <Compile Include="Assets\Script\Components\Windows\CommandRow.cs" />
     <Compile Include="Assets\Script\Components\Windows\ItemCommandWindow.cs" />
     <Compile Include="Assets\Script\Components\Windows\ItemWindow.cs" />
     <Compile Include="Assets\Script\Components\Windows\ItemWindowRow.cs" />

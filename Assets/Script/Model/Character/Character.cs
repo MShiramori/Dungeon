@@ -81,6 +81,22 @@ namespace Assets.Script.Model
 
         }
 
+        // 行動後処理
+        public virtual void AfterAction()
+        {
+
+        }
+
+        /// <summary>
+        /// HPを減らす（マイナス指定なら回復する）
+        /// </summary>
+        public int ReduceHP(int point)
+        {
+            var beforHP = HP;
+            HP = Mathf.Clamp(HP - point, 0, MaxHP);
+            return beforHP - HP;
+        }
+
         protected bool CanMove(Form destination)
         {
             if (destination == this.Position)
@@ -137,7 +153,7 @@ namespace Assets.Script.Model
             //攻撃処理
             var action = new CharacterAttack(this, this.Direction);
             var des = this.Position + this.Direction;
-            var target = dungeon.Characters.FirstOrDefault(x => x.Position == des);
+            var target = dungeon.Characters.FirstOrDefault(x => x.Position == des && !x.IsDeath);
             if(target != null && !target.IsDeath && !CheckWallForAction(des))
             {
                 //命中判定
@@ -145,7 +161,7 @@ namespace Assets.Script.Model
                 if (isHit)
                 {
                     var damage = Mathf.Max(1, (int)((this.Params.Attack - target.Params.Defence / 2) * UnityEngine.Random.Range(0.95f, 1.05f)));
-                    target.HP -= damage;
+                    target.ReduceHP(damage);
                     action.SubActions.Add(new CharacterDamaged(target, this, damage, true, target.IsDeath));
                 }
                 else

@@ -170,16 +170,16 @@ namespace Assets.Script.Scene
 
                 if (!isAction)
                 {
-                    //メニューボタン
-                    if (Input.GetKey(KeyCode.X))
-                    {
-                        WindowRoot.OnMenuButtonClick();
-                    }
+                    //ウィンドウの入力チェック
+                    WindowRoot.CheckInput();
                 }
 
                 //ターン経過処理実行
                 if (isAction)
                 {
+                    //プレイヤーの行動時自動処理
+                    dungeon.Player.AfterAction();
+
                     //プレイヤーの行動で経過した時間だけ他のキャラを行動させる
                     var time = dungeon.Player.ActionWait / dungeon.Player.Speed;
                     for (int i = 0; i < time; i++)
@@ -197,6 +197,7 @@ namespace Assets.Script.Scene
                     dungeon.Player.ActionAnimations()
                         //移動アニメ
                         .SelectMany(_ => Observable.WhenAll(dungeon.Characters.Select(x => x.MovingAnimation())))
+                        .Do(_ => dungeon.StatusUpdateEventTrigger.OnNext(Unit.Default))//表示更新
                         //プレイヤー以外の移動以外のアクションを順次実行
                         .SelectMany(_ => dungeon.Characters.Where(x => x.Type != CharacterType.Player).Select(x => x.ActionAnimations()).Concat())
                         .Last()

@@ -13,11 +13,13 @@ namespace Assets.Script.Model
         protected override CharacterParams Params { get { return StaticData.PlayerParams; } }
         public override CharacterType Type { get { return CharacterType.Player; } }
         public int Level { get { return StaticData.PlayerParams.Level; } set { StaticData.PlayerParams.Level = value; } }
-        public int Stamina { get { return StaticData.PlayerParams.Stamina; } set { StaticData.PlayerParams.Stamina = value; } }
+        public float Stamina { get { return StaticData.PlayerParams.Stamina; } set { StaticData.PlayerParams.Stamina = value; } }
         public int MaxStamina { get { return StaticData.PlayerParams.MaxStamina; } set { StaticData.PlayerParams.MaxStamina = value; } }
         public Dictionary<ItemCategory, Item> Equips { get { return StaticData.PlayerParams.Equips; } }
 
         public const int MAX_ITEM_COUNT = 20;
+
+        private float flacHP;//HP自動回復用端数
 
         public Player(Dungeon _dungeon) : base(_dungeon)
         {
@@ -39,6 +41,8 @@ namespace Assets.Script.Model
                 Equips.Add(ItemCategory.Armor, null);
                 Equips.Add(ItemCategory.Arrow, null);
                 Equips.Add(ItemCategory.Ring, null);
+
+                flacHP = 0;
             }
         }
 
@@ -46,6 +50,20 @@ namespace Assets.Script.Model
         public int CommandExec()
         {
             return MAX_WAIT / Speed;
+        }
+
+        public override void AfterAction()
+        {
+            Stamina -= Speed / 80f;
+            if (HP < MaxHP)
+            {
+                flacHP += MaxHP / 150f;
+                if (flacHP >= 1)
+                {
+                    ReduceHP(-(int)flacHP);
+                    flacHP -= (int)flacHP;
+                }
+            }
         }
 
         public override void ResetViewPotition()
