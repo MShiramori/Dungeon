@@ -97,7 +97,17 @@ namespace Assets.Script.Model
         public int MasterId { get; private set; }
         public ItemMaster Master { get; private set; }
         public ItemCategory Category { get { return Master.Category; } }
+        public int Powor { get { return Master.Powor; } }
         public int CountValue { get; set; }//装備の強化値、杖の回数、矢の本数など
+        //装備中判定
+        public bool IsEquiped
+        {
+            get
+            {
+                var equips = dungeon.Player.Equips;
+                return equips.ContainsKey(this.Category) && equips[this.Category] == this;
+            }
+        }
 
         public Item(Dungeon _dungeon, int id) : base(_dungeon)
         {
@@ -110,6 +120,11 @@ namespace Assets.Script.Model
         {
             //TODO: プレイヤー以外にもやらせる場合どうするか要検討
             return dungeon.Player.PutItem(this);
+        }
+
+        public bool EquipItem()
+        {
+            return dungeon.Player.EquipItem(this);
         }
 
         protected override void SetTexture()

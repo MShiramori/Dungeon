@@ -10,18 +10,17 @@ namespace Assets.Script.Database
     {
         public virtual ItemCategory Category { get { return ItemCategory.None; } }
         public string Name { get; set; }
+        public virtual int Powor { get; set; }
     }
 
     public class WeaponMaster : ItemMaster
     {
         public override ItemCategory Category { get { return ItemCategory.Weapon; } }
-        public int Powor { get; set; }
     }
 
     public class ArmorMaster : ItemMaster
     {
         public override ItemCategory Category { get { return ItemCategory.Armor; } }
-        public int Powor { get; set; }
     }
 
     public partial class DataBase

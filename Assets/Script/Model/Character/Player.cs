@@ -11,6 +11,32 @@ namespace Assets.Script.Model
     public class Player : Character
     {
         protected override CharacterParams Params { get { return StaticData.PlayerParams; } }
+        public override int Atk
+        {
+            get
+            {
+                var weaponAtk = 0;
+                Item weapon = null;
+                if (Equips.TryGetValue(ItemCategory.Weapon, out weapon))
+                {
+                    if (weapon != null) weaponAtk = weapon.Powor + weapon.CountValue;
+                }
+                return base.Atk + weaponAtk;
+            }
+        }
+        public override int Def
+        {
+            get
+            {
+                var ArmorDef = 0;
+                Item armor = null;
+                if (Equips.TryGetValue(ItemCategory.Armor, out armor))
+                {
+                    if (armor != null) ArmorDef = armor.Powor + armor.CountValue;
+                }
+                return base.Atk + ArmorDef;
+            }
+        }
         public override CharacterType Type { get { return CharacterType.Player; } }
         public int Level { get { return StaticData.PlayerParams.Level; } set { StaticData.PlayerParams.Level = value; } }
         public float Stamina { get { return StaticData.PlayerParams.Stamina; } set { StaticData.PlayerParams.Stamina = value; } }
@@ -83,9 +109,13 @@ namespace Assets.Script.Model
         {
             if(item.Position == this.Position && this.Items.Count < MAX_ITEM_COUNT)
             {
-                //TODO:持ち物に入った時点でuniqueIdの管理とかおかしな感じになるのでオブジェクトと実体切り離してdungeonのリストから消去すべきではないかと愚考
+                //持ち物一覧に加える
+                var newId = this.Items.Any() ? this.Items.Max(x => x.UniqueId) : 0;
                 this.Items.Add(item);
+                //オブジェクトを削除してダンジョンのリストから消去
                 item.RemoveObject();
+                dungeon.Objects.Remove(item);
+                item.UniqueId = newId;//一応持ち物内ＩＤとして再採番
                 Debug.LogFormat("{0}を拾った", item.Name);
                 return true;
             }
@@ -98,10 +128,18 @@ namespace Assets.Script.Model
             var result = PutItemCore(item);
             ReservedActions.Add(new CharacterItemPut(this, item, result));//アイテム置いた処理を登録
             this.IsAction |= result;
+            if (result)
+            {
+                StaticData.Message.ShowMessage(string.Format("{0}を置いた", item.Name), false);
+            }
+            else
+            {
+                StaticData.Message.ShowMessage(string.Format("ここには置けない"), false);
+            }
             return result;
         }
 
-        public bool PutItemCore(Item item)
+        private bool PutItemCore(Item item)
         {
             //持ってない
             if (!Items.Contains(item))
@@ -116,9 +154,43 @@ namespace Assets.Script.Model
             }
             Items.Remove(item);
 
-            item.Position = this.Position;
+            dungeon.AddObject(item, this.Position);
             item.InstantiateObject(dungeon.DungeonPrefabs.ObjectPrefab, dungeon.ObjectRoot);
 
+            return true;
+        }
+
+        /// <summary>
+        /// アイテムを装備する
+        /// 装備中のアイテムが選択された場合は外す
+        /// </summary>
+        public bool EquipItem(Item item)
+        {
+            var result = EquipItemCore(item);
+            this.IsAction |= result;
+            return result;
+        }
+
+        private bool EquipItemCore(Item item)
+        {
+            //装備できないカテゴリのアイテム
+            if (!Equips.ContainsKey(item.Category))
+            {
+                StaticData.Message.ShowMessage(string.Format("それは装備できない"), false);
+                return false;
+            }
+
+            //装備中のアイテムなら外す
+            if (Equips[item.Category] == item)
+            {
+                Equips[item.Category] = null;
+                StaticData.Message.ShowMessage(string.Format("{0}を外した", item.Name), false);
+                return true;
+            }
+
+            //装備する
+            Equips[item.Category] = item;
+            StaticData.Message.ShowMessage(string.Format("{0}を装備した", item.Name), false);
             return true;
         }
 

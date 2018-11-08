@@ -42,7 +42,7 @@ namespace Assets.Script.Components
             this.KeyText.text = string.Format("{0})", master.Item1);
             this.Model = item;
             this.Icon.sprite = item.GetSprite();
-            this.NameText.text = item.Name;
+            this.NameText.text = item.Name + (item.IsEquiped ? "（装備中" : "");
         }
 
         private void OnDestroy()

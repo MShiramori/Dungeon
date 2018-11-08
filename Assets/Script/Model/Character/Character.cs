@@ -19,6 +19,8 @@ namespace Assets.Script.Model
         public int HP { get { return Params.HP; } set { Params.HP = value; } }
         public int MaxHP { get { return Params.MaxHP; } set { Params.MaxHP = value; } }
         public int Speed { get { return Params.Speed; } set { Params.Speed = value; } }
+        public virtual int Atk { get { return Params.Attack; } }
+        public virtual int Def { get { return Params.Defence; } }
         public List<Item> Items { get { return Params.Items; } }
         public int ActionWait { get; set; }
         public bool IsDeath { get { return this.HP <= 0; } }
@@ -160,7 +162,7 @@ namespace Assets.Script.Model
                 var isHit = (int)UnityEngine.Random.Range(0, 100) >= Mathf.Clamp(target.Params.Agi - this.Params.Dex + 20, 0, 95);
                 if (isHit)
                 {
-                    var damage = Mathf.Max(1, (int)((this.Params.Attack - target.Params.Defence / 2) * UnityEngine.Random.Range(0.95f, 1.05f)));
+                    var damage = Mathf.Max(1, (int)((this.Atk - target.Def / 2) * UnityEngine.Random.Range(0.95f, 1.05f)));
                     target.ReduceHP(damage);
                     action.SubActions.Add(new CharacterDamaged(target, this, damage, true, target.IsDeath));
                 }

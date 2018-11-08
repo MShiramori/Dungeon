@@ -82,10 +82,11 @@ namespace Assets.Script.Components
                 || _model.Category == ItemCategory.Ring
                 || _model.Category == ItemCategory.Arrow)
             {
-                list.Add(Tuple.Create<string, Func<bool>>("装備", () =>
+                list.Add(Tuple.Create<string, Func<bool>>(_model.IsEquiped ? "外す" : "装備", () =>
                 {
+                    var result = _model.EquipItem();
                     CloseAllWindow();
-                    return false;
+                    return result;
                 }));
             }
 
@@ -99,11 +100,6 @@ namespace Assets.Script.Components
             {
                 var result = _model.PutItem();
                 CloseAllWindow();
-                if (result)
-                {
-                    //TODO: ターン経過処理
-                }
-                //TODO: メッセージ表示
                 return result;
             }));
 
