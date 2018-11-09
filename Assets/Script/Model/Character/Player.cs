@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 using UniRx;
+using Assets.Script.Database;
 
 namespace Assets.Script.Model
 {
@@ -34,17 +35,21 @@ namespace Assets.Script.Model
                 {
                     if (armor != null) ArmorDef = armor.Powor + armor.CountValue;
                 }
-                return base.Atk + ArmorDef;
+                return base.Def + ArmorDef;
             }
         }
         public override CharacterType Type { get { return CharacterType.Player; } }
         public int Level { get { return StaticData.PlayerParams.Level; } set { StaticData.PlayerParams.Level = value; } }
-        public float Stamina { get { return StaticData.PlayerParams.Stamina; } set { StaticData.PlayerParams.Stamina = value; } }
-        public int MaxStamina { get { return StaticData.PlayerParams.MaxStamina; } set { StaticData.PlayerParams.MaxStamina = value; } }
+        public long Exp { get { return StaticData.PlayerParams.Exp; } set { StaticData.PlayerParams.Exp = value; } }
+        // 満腹度
+        public float Satiety { get { return StaticData.PlayerParams.Stamina; } set { StaticData.PlayerParams.Stamina = value; } }
+        public int ViewableSatiety { get { return Mathf.CeilToInt(Satiety); } }
+        public int MaxSatiety { get { return StaticData.PlayerParams.MaxStamina; } set { StaticData.PlayerParams.MaxStamina = value; } }
         public Dictionary<ItemCategory, Item> Equips { get { return StaticData.PlayerParams.Equips; } }
         public bool IsAction { get; set; }
 
         public const int MAX_ITEM_COUNT = 20;
+        public const int DEFAULT_HP = 30;
 
         private float flacHP;//HP自動回復用端数
 
@@ -55,11 +60,11 @@ namespace Assets.Script.Model
                 StaticData.PlayerParams = new PlayerParams();
                 Name = "プレイヤー";
                 Level = 1;
-                HP = 30;
-                MaxHP = 30;
+                HP = DEFAULT_HP;
+                MaxHP = DEFAULT_HP;
                 Speed = 8;
-                Stamina = 100;
-                MaxStamina = 100;
+                Satiety = 100;
+                MaxSatiety = 100;
                 Params.Str = 8;
                 Params.Vit = 0;
                 Params.Dex = 0;
@@ -74,6 +79,67 @@ namespace Assets.Script.Model
             }
         }
 
+        /// <summary>
+        /// 満腹度を減らす（マイナス指定なら回復する）
+        /// </summary>
+        public float ReduceSatiety(float point)
+        {
+            var beforSatiety = Satiety;
+            Satiety = Mathf.Clamp(Satiety - point, 0, MaxSatiety);
+            return beforSatiety - Satiety;
+        }
+
+        /// <summary>
+        /// 経験値を加算する
+        /// </summary>
+        public bool AddExp(long point)
+        {
+            this.Exp += point;
+            var afterLevel = Database.DataBase.PlayerLevelMasters.Where(x => x.Value <= this.Exp).Min(x => x.Key);
+            if (afterLevel != this.Level)
+            {
+                UpdateLevel(afterLevel);
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// レベルを加算する
+        /// </summary>
+        public bool AddLevel(int point)
+        {
+            if(point > 0)//レベルアップ
+            {
+                var maxLevel = Database.DataBase.PlayerLevelMasters.Max(x => x.Key);
+                if (this.Level >= maxLevel)
+                {
+                    //既に最大Lv
+                    return false;
+                }
+                var afterLevel = Mathf.Min(maxLevel, this.Level + point);
+                this.Exp = Database.DataBase.PlayerLevelMasters[afterLevel];
+                UpdateLevel(afterLevel);
+            }
+            else//レベルダウン
+            {
+                if(this.Level == 1)
+                {
+                    //これ以上下がらない
+                    return false;
+                }
+                var afterLevel = Mathf.Max(1, this.Level - point);
+                this.Exp = Database.DataBase.PlayerLevelMasters[afterLevel + 1] - 1;
+                UpdateLevel(afterLevel);
+            }
+            return true;
+        }
+
+        private void UpdateLevel(int level)
+        {
+            this.Level = level;
+            this.MaxHP = DEFAULT_HP + (level - 1) * 8;
+        }
+
         // コマンド入力を受けて行動する
         public int CommandExec()
         {
@@ -82,7 +148,7 @@ namespace Assets.Script.Model
 
         public override void AfterAction()
         {
-            Stamina -= Speed / 80f;
+            ReduceSatiety(Speed / 80f);
             if (HP < MaxHP)
             {
                 flacHP += MaxHP / 150f;
@@ -123,23 +189,7 @@ namespace Assets.Script.Model
             return false;
         }
 
-        public bool PutItem(Item item)
-        {
-            var result = PutItemCore(item);
-            ReservedActions.Add(new CharacterItemPut(this, item, result));//アイテム置いた処理を登録
-            this.IsAction |= result;
-            if (result)
-            {
-                StaticData.Message.ShowMessage(string.Format("{0}を置いた", item.Name), false);
-            }
-            else
-            {
-                StaticData.Message.ShowMessage(string.Format("ここには置けない"), false);
-            }
-            return result;
-        }
-
-        private bool PutItemCore(Item item)
+        protected override bool PutItemCore(Item item)
         {
             //持ってない
             if (!Items.Contains(item))
@@ -148,7 +198,7 @@ namespace Assets.Script.Model
             if (dungeon.Objects.Any(x => x.Position == this.Position))
                 return false;
 
-            if (Equips[item.Category] == item)
+            if (Equips.ContainsKey(item.Category) && Equips[item.Category] == item)
             {
                 Equips[item.Category] = null;
             }
@@ -157,6 +207,7 @@ namespace Assets.Script.Model
             dungeon.AddObject(item, this.Position);
             item.InstantiateObject(dungeon.DungeonPrefabs.ObjectPrefab, dungeon.ObjectRoot);
 
+            this.IsAction = true;
             return true;
         }
 
@@ -191,6 +242,68 @@ namespace Assets.Script.Model
             //装備する
             Equips[item.Category] = item;
             StaticData.Message.ShowMessage(string.Format("{0}を装備した", item.Name), false);
+            return true;
+        }
+
+        /// <summary>
+        /// ポーションを飲む
+        /// </summary>
+        public bool DrinkPotion(Item item)
+        {
+            if (item.Category != ItemCategory.Potion)
+            {
+                return false;
+            }
+
+            var action = new CharacterDrinkPotion(this, item);
+            var effectType = (item.Master as PotionMaster).EffectType;
+            switch (effectType)
+            {
+                case PotionEffectType.回復薬:
+                    if (this.HP < this.MaxHP)
+                    {
+                        var point = this.ReduceHP(-Mathf.Max(25, (int)(this.MaxHP * 0.3)));
+                        action.SubActions.Add(new MessageAction(this, string.Format("HPが{0}回復した", -point), false));
+                    }
+                    else
+                    {
+                        this.MaxHP += 1;
+                        this.HP = this.MaxHP;
+                        action.SubActions.Add(new MessageAction(this, string.Format("最大HPが{0}アップした", 1), false));
+                    }
+                    break;
+
+                case PotionEffectType.強回復薬:
+                    if (this.HP < this.MaxHP)
+                    {
+                        var point = this.ReduceHP(-Mathf.Max(100, (int)(this.MaxHP * 0.8)));
+                        action.SubActions.Add(new MessageAction(this, string.Format("HPが{0}回復した", -point), false));
+                    }
+                    else
+                    {
+                        this.MaxHP += 2;
+                        this.HP = this.MaxHP;
+                        action.SubActions.Add(new MessageAction(this, string.Format("最大HPが{0}アップした", 2), false));
+                    }
+                    break;
+
+                case PotionEffectType.Lvアップ:
+                    if (this.AddLevel(1))
+                    {
+                        action.SubActions.Add(new MessageAction(this, string.Format("レベル{0}へようこそ", this.Level), true));
+                    }
+                    break;
+            }
+
+            //満腹度5回復
+            this.ReduceSatiety(-5f);
+            //消費
+            this.Items.Remove(item);
+
+            //行動を登録
+            ReservedActions.Add(action);
+            this.IsAction = true;
+
             return true;
         }
 

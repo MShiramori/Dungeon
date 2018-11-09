@@ -31,6 +31,7 @@ namespace Assets.Script.Model
     public class PlayerParams : CharacterParams
     {
         public int Level { get; set; }
+        public long Exp { get; set; }
         public float Stamina { get; set; }
         public int MaxStamina { get; set; }
         public override int Attack { get { return Str + Level; } }

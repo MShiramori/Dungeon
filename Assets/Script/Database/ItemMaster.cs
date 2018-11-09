@@ -23,6 +23,12 @@ namespace Assets.Script.Database
         public override ItemCategory Category { get { return ItemCategory.Armor; } }
     }
 
+    public class PotionMaster : ItemMaster
+    {
+        public override ItemCategory Category { get { return ItemCategory.Potion; } }
+        public PotionEffectType EffectType { get; set; }
+    }
+
     public partial class DataBase
     {
         /// <summary>
@@ -82,7 +88,28 @@ namespace Assets.Script.Database
                     Powor = 10,
                 }
             },
-#endregion
+            #endregion
+
+            #region 薬
+            { 601, new PotionMaster()
+                {
+                    Name = "水",
+                    EffectType = PotionEffectType.水,
+                }
+            },
+            { 602, new PotionMaster()
+                {
+                    Name = "体力回復の薬",
+                    EffectType = PotionEffectType.回復薬,
+                }
+            },
+            { 603, new PotionMaster()
+                {
+                    Name = "エリクシル",
+                    EffectType = PotionEffectType.強回復薬,
+                }
+            },
+            #endregion
         };
     }
 }

@@ -149,12 +149,12 @@ namespace Assets.Script.Scene
                     mode = InputMode.OnAnimation;
                     
                     //プレイヤーの移動以外のアクションを実行
-                    dungeon.Player.ActionAnimations()
+                    dungeon.Player.AllReservedActionAnimations()
                         //移動アニメ
                         .SelectMany(_ => Observable.WhenAll(dungeon.Characters.Select(x => x.MovingAnimation())))
                         .Do(_ => dungeon.StatusUpdateEventTrigger.OnNext(Unit.Default))//表示更新
                         //プレイヤー以外の移動以外のアクションを順次実行
-                        .SelectMany(_ => dungeon.Characters.Where(x => x.Type != CharacterType.Player).Select(x => x.ActionAnimations()).Concat())
+                        .SelectMany(_ => dungeon.Characters.Where(x => x.Type != CharacterType.Player).Select(x => x.AllReservedActionAnimations()).Concat())
                         .Last()
                         //後処理
                         .Do(x =>

@@ -52,6 +52,9 @@ namespace Assets.Script.Database
                     new ItemTableMaster() { ItemId = 202, Rate = 100 },
                     new ItemTableMaster() { ItemId = 203, Rate = 70 },
                     new ItemTableMaster() { ItemId = 204, Rate = 30 },
+                    new ItemTableMaster() { ItemId = 601, Rate = 150 },
+                    new ItemTableMaster() { ItemId = 602, Rate = 70 },
+                    new ItemTableMaster() { ItemId = 603, Rate = 30 },
                 }
             },
         };

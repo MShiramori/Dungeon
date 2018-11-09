@@ -90,6 +90,16 @@ namespace Assets.Script.Components
                 }));
             }
 
+            if (_model.Category == ItemCategory.Potion)
+            {
+                list.Add(Tuple.Create<string, Func<bool>>("飲む", () =>
+                {
+                    var result = _model.DrinkPotion();
+                    CloseAllWindow();
+                    return result;
+                }));
+            }
+
             list.Add(Tuple.Create<string, Func<bool>>("投げる", () =>
             {
                 CloseAllWindow();

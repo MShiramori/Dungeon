@@ -196,6 +196,21 @@ namespace Assets.Script.Model
             return false;
         }
 
+        /// <summary>
+        /// アイテムを置く処理
+        /// </summary>
+        public bool PutItem(Item item)
+        {
+            var result = PutItemCore(item);
+            ReservedActions.Add(new CharacterItemPut(this, item, result));//アイテム置いた処理を登録
+            return result;
+        }
+
+        protected virtual bool PutItemCore(Item item)
+        {
+            return false;
+        }
+
         public virtual void SetPosition(Form position)
         {
             this.Position = position;
@@ -248,9 +263,14 @@ namespace Assets.Script.Model
         /// <summary>
         /// 移動以外のアクションを順次実行
         /// </summary>
-        public IObservable<Unit> ActionAnimations()
+        public IObservable<Unit> AllReservedActionAnimations()
         {
             var actions = ReservedActions.Where(x => x as CharacterMove == null).ToArray();
+            return ActionAnimations(actions);
+        }
+
+        private IObservable<Unit> ActionAnimations(CharacterAction[] actions)
+        {
             if (!actions.Any())
                 return Observable.ReturnUnit();
             var actionList = new List<IObservable<Unit>>();
@@ -288,9 +308,29 @@ namespace Assets.Script.Model
                     }));
                     continue;
                 }
+                var drinkAction = action as CharacterDrinkPotion;
+                if(drinkAction != null)
+                {
+                    actionList.Add(Observable.Defer(() =>
+                    {
+                        StaticData.Message.ShowMessage(string.Format("{0}を飲んだ", drinkAction.TargetItem.Name), false);
+                        return Observable.ReturnUnit();
+                    })
+                    .SelectMany(ActionAnimations(drinkAction.SubActions.ToArray()))
+                    .Last());
+                }
                 actionList.Add(Observable.ReturnUnit());
+                var messageAction = action as MessageAction;
+                if (messageAction != null)
+                {
+                    actionList.Add(Observable.Defer(() =>
+                    {
+                        StaticData.Message.ShowMessage(messageAction.Message, messageAction.IsWait);
+                        return Observable.ReturnUnit();
+                    }));
+                }
             }
-            return actionList.Concat();
+            return actionList.Concat().Last();
         }
 
         /// <summary>
@@ -555,6 +595,34 @@ namespace Assets.Script.Model
         {
             TargetItem = item;
             IsSuccess = isSuccess;
+        }
+    }
+
+    /// <summary>
+    /// ポーションを使うアクション
+    /// </summary>
+    public class CharacterDrinkPotion : CharacterAction
+    {
+        public Item TargetItem;
+        public List<CharacterAction> SubActions { get; private set; }
+        public CharacterDrinkPotion(Character self, Item item) : base(self)
+        {
+            TargetItem = item;
+            SubActions = new List<CharacterAction>();
+        }
+    }
+
+    /// <summary>
+    /// メッセージを表示するだけのアクション
+    /// </summary>
+    public class MessageAction : CharacterAction
+    {
+        public string Message;
+        public bool IsWait;
+        public MessageAction(Character self, string message, bool isWait) : base(self)
+        {
+            Message = message;
+            IsWait = isWait;
         }
     }
 
