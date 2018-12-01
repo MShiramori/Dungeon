@@ -9,5 +9,7 @@ namespace Assets.Script.Enums
     {
         //１回の行動の描画に使うフレーム数
         public const int MOVING_ANIMATION_FRAME = 16;
+        //ダンジョンのマスのピクセルサイズ
+        public const int MAPTIP_PIXCEL_SIZE = 32;
     }
 }

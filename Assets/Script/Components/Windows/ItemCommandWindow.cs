@@ -21,6 +21,12 @@ namespace Assets.Script.Components
 
         private Item _model;
         private List<CommandRow> Commands = new List<CommandRow>();
+        private Dungeon _dungeon;
+
+        public void Initialize(Dungeon dungeon)
+        {
+            _dungeon = dungeon;
+        }
 
         //入力チェック
         public override bool CheckInput()
@@ -84,7 +90,7 @@ namespace Assets.Script.Components
             {
                 list.Add(Tuple.Create<string, Func<bool>>(_model.IsEquiped ? "外す" : "装備", () =>
                 {
-                    var result = _model.EquipItem();
+                    var result = _dungeon.Player.EquipItem(_model);
                     CloseAllWindow();
                     return result;
                 }));
@@ -94,7 +100,7 @@ namespace Assets.Script.Components
             {
                 list.Add(Tuple.Create<string, Func<bool>>("飲む", () =>
                 {
-                    var result = _model.DrinkPotion();
+                    var result = _dungeon.Player.DrinkPotion(_model);
                     CloseAllWindow();
                     return result;
                 }));
@@ -102,13 +108,14 @@ namespace Assets.Script.Components
 
             list.Add(Tuple.Create<string, Func<bool>>("投げる", () =>
             {
+                var result = _dungeon.Player.ThrowItem(_model);
                 CloseAllWindow();
-                return false;
+                return result;
             }));
 
             list.Add(Tuple.Create<string, Func<bool>>("置く", () =>
             {
-                var result = _model.PutItem();
+                var result = _dungeon.Player.PutItem(_model);
                 CloseAllWindow();
                 return result;
             }));

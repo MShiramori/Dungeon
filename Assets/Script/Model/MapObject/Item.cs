@@ -26,27 +26,11 @@ namespace Assets.Script.Model
             }
         }
 
-        public Item(Dungeon _dungeon, int id) : base(_dungeon)
+        public Item(Dungeon _dungeon, int id, int count) : base(_dungeon)
         {
             this.MasterId = id;
             this.Master = DataBase.ItemMasters[id];
-            this.CountValue = 0;//TODO: 回数指定
-        }
-
-        public bool PutItem()
-        {
-            //TODO: プレイヤー以外にもやらせる場合どうするか要検討
-            return dungeon.Player.PutItem(this);
-        }
-
-        public bool EquipItem()
-        {
-            return dungeon.Player.EquipItem(this);
-        }
-
-        public bool DrinkPotion()
-        {
-            return dungeon.Player.DrinkPotion(this);
+            this.CountValue = count;
         }
 
         protected override void SetTexture()
@@ -75,6 +59,41 @@ namespace Assets.Script.Model
         {
             if (sprites == null || !sprites.Any()) return null;
             return sprites[0];
+        }
+
+        /// <summary>
+        /// アイテムが床に落ちる処理
+        /// </summary>
+        /// <returns></returns>
+        public bool DropFloor(Form target)
+        {
+            if (dungeon.Objects.Any(x => x.Position == target))
+            {
+                //TODO: 落ちた場所に既に何かあったとき、周囲に落とす処理
+                Debug.LogFormat("既に何かあるので{0}を置けなかった", this.Name);
+                return false;
+            }
+
+            //落ちる
+            if (!dungeon.Objects.Contains(this))
+            {
+                //ダンジョンのオブジェクト一覧に追加
+                dungeon.AddObject(this, target);
+            }
+            else
+            {
+                //既にあるなら移動
+                this.Position = target;
+            }
+
+            if (this.Presenter == null)
+            {
+                //GameObjectがなければ生成
+                InstantiateObject(dungeon.DungeonPrefabs.ObjectPrefab, dungeon.ObjectRoot);
+            }
+            Debug.LogFormat("{0}は地面に落ちた", this.Name);
+
+            return true;
         }
     }
 }

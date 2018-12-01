@@ -57,13 +57,17 @@ namespace Assets.Script.Model
             //階段生成
             AddObject(new Step(this) { IsNext = true });
 
+            //フロア情報取得
+            var floorInfo = Database.DataBase.FloorMasters[this.Floor];
+
             //アイテム生成
             var itemCnt = UnityEngine.Random.Range(4, 7);
             for (int i = 0; i < itemCnt; i++)
             {
                 //フロア情報から抽選
-                var itemId = Database.DataBase.FloorMasters[this.Floor].ItemTable.WaitedSample(x => x.Rate).ItemId;
-                AddObject(new Item(this, itemId));
+                var rotItem = floorInfo.ItemTable.WaitedSample(x => x.Rate);
+                var count = rotItem.CountFrom > 0 ? UnityEngine.Random.Range(rotItem.CountFrom, rotItem.CountTo) : 0;
+                AddObject(new Item(this, rotItem.ItemId, count));
             }
 
             //プレイヤー生成
@@ -73,8 +77,8 @@ namespace Assets.Script.Model
             var enemyCnt = UnityEngine.Random.Range(3, 6);
             for (int i = 0; i < enemyCnt; i++)
             {
-                //TODO: フロア情報から抽選
-                AddCharacter(new Enemy(this, EnemyType.ゴブリン));
+                //フロア情報から抽選
+                AddCharacter(new Enemy(this, floorInfo.EnemyTable.WaitedSample(x => x.Rate).Id));
             }
 
             //TODO:削除しないでオブジェクトのリサイクル
@@ -119,7 +123,7 @@ namespace Assets.Script.Model
                     else
                         obj = GameObject.Instantiate(DungeonPrefabs.FloorPrefab);
                     obj.transform.SetParent(MapRoot, false);
-                    obj.transform.localPosition = new Vector3(x * 32, y * -32, 0);
+                    obj.transform.localPosition = new Vector3(x * DungeonConstants.MAPTIP_PIXCEL_SIZE, y * -DungeonConstants.MAPTIP_PIXCEL_SIZE, 0);
                 }
             }
         }

@@ -1,4 +1,5 @@
 ﻿using Assets.Script.Enums;
+using Assets.Script.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,9 +16,9 @@ namespace Assets.Script.Components
 
         private int inputWait = 0;
 
-        public void Initialize()
+        public void Initialize(Dungeon dungeon)
         {
-
+            ItemWindow.Initialize(dungeon);
         }
 
         public void Update()

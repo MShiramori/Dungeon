@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Assets.Script.Enums;
+using System;
 using System.Collections.Generic;
 
 namespace Assets.Script.Database
@@ -10,12 +11,20 @@ namespace Assets.Script.Database
         public int EnemyTableId { get; set; }
 
         public ItemTableMaster[] ItemTable { get { return DataBase.ItemTableMasters[ItemTableId]; } }
-        public int[] EnemyTable { get { return DataBase.EnemyTableMasters[EnemyTableId]; } }
+        public EnemyTableMaster[] EnemyTable { get { return DataBase.EnemyTableMasters[EnemyTableId]; } }
     }
 
     public class ItemTableMaster
     {
         public int ItemId { get; set; }
+        public int Rate { get; set; }
+        public int CountFrom { get; set; }
+        public int CountTo { get; set; }
+    }
+
+    public class EnemyTableMaster
+    {
+        public EnemyId Id { get; set; }
         public int Rate { get; set; }
     }
 
@@ -52,9 +61,10 @@ namespace Assets.Script.Database
                     new ItemTableMaster() { ItemId = 202, Rate = 100 },
                     new ItemTableMaster() { ItemId = 203, Rate = 70 },
                     new ItemTableMaster() { ItemId = 204, Rate = 30 },
-                    new ItemTableMaster() { ItemId = 601, Rate = 150 },
-                    new ItemTableMaster() { ItemId = 602, Rate = 70 },
-                    new ItemTableMaster() { ItemId = 603, Rate = 30 },
+                    new ItemTableMaster() { ItemId = 601, Rate = 30 },
+                    new ItemTableMaster() { ItemId = 602, Rate = 100 },
+                    new ItemTableMaster() { ItemId = 603, Rate = 70 },
+                    new ItemTableMaster() { ItemId = 604, Rate = 30 },
                 }
             },
         };
@@ -62,9 +72,15 @@ namespace Assets.Script.Database
         /// <summary>
         /// 敵出現テーブルマスタ
         /// </summary>
-        public static readonly Dictionary<int, int[]> EnemyTableMasters = new Dictionary<int, int[]>()
+        public static readonly Dictionary<int, EnemyTableMaster[]> EnemyTableMasters = new Dictionary<int, EnemyTableMaster[]>()
         {
-            { 1, new int[]{ 1 } },
+            { 1, new EnemyTableMaster[]
+                {
+                    new EnemyTableMaster() { Id = EnemyId.ゴブリン, Rate = 100 },
+                    new EnemyTableMaster() { Id = EnemyId.大ネズミ, Rate = 100 },
+                    new EnemyTableMaster() { Id = EnemyId.ローチ, Rate = 100 },
+                }
+            }
         };
     }
 }

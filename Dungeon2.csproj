@@ -303,6 +303,7 @@
     <Compile Include="Assets\Script\Components\Windows\Window.cs" />
     <Compile Include="Assets\Script\Components\Windows\WindowPrefabs.cs" />
     <Compile Include="Assets\Script\Components\Windows\WindowRootPresenter.cs" />
+    <Compile Include="Assets\Script\Database\EnemyMaster.cs" />
     <Compile Include="Assets\Script\Database\FloorMaster.cs" />
     <Compile Include="Assets\Script\Database\ItemMaster.cs" />
     <Compile Include="Assets\Script\Database\MenuKeyMaster.cs" />

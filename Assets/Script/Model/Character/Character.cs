@@ -20,12 +20,14 @@ namespace Assets.Script.Model
         public int MaxHP { get { return Params.MaxHP; } set { Params.MaxHP = value; } }
         public int Speed { get { return Params.Speed; } set { Params.Speed = value; } }
         public virtual int Atk { get { return Params.Attack; } }
+        public virtual int WeaponAtk { get { return 0; } }
         public virtual int Def { get { return Params.Defence; } }
         public List<Item> Items { get { return Params.Items; } }
         public int ActionWait { get; set; }
         public bool IsDeath { get { return this.HP <= 0; } }
+        public List<CharacterStatusEffect> StatusEffects { get; private set; }
 
-        protected const int MAX_WAIT = 120;
+        protected const int MAX_WAIT = 256;
         private static int lastId = 0;
         protected Dungeon dungeon { get; set; }
 
@@ -47,6 +49,7 @@ namespace Assets.Script.Model
             dungeon = _dungeon;
             ReservedActions = new List<CharacterAction>();
             spriteAnimationDisposable = new SerialDisposable();
+            StatusEffects = new List<CharacterStatusEffect>();
         }
 
         /// <summary>
@@ -71,7 +74,7 @@ namespace Assets.Script.Model
             if (ActionWait <= 0)
             {
                 Action();
-                ActionWait = MAX_WAIT;
+                ActionWait = ActionWait + MAX_WAIT;
                 return true;
             }
             return false;
@@ -143,7 +146,7 @@ namespace Assets.Script.Model
             SetDirection(destination - Position);
             if (CanMove(destination))
             {
-                ReservedActions.Add(new CharacterMove(this, this.Position, destination));//移動情報を登録
+                ReservedActions.Add(new CharacterMoveAction(this, this.Position, destination));//移動情報を登録
                 SetPosition(destination);
                 return true;
             }
@@ -153,7 +156,7 @@ namespace Assets.Script.Model
         public bool Attack()
         {
             //攻撃処理
-            var action = new CharacterAttack(this, this.Direction);
+            var action = new CharacterAttackAction(this, this.Direction);
             var des = this.Position + this.Direction;
             var target = dungeon.Characters.FirstOrDefault(x => x.Position == des && !x.IsDeath);
             if(target != null && !target.IsDeath && !CheckWallForAction(des))
@@ -162,13 +165,18 @@ namespace Assets.Script.Model
                 var isHit = (int)UnityEngine.Random.Range(0, 100) >= Mathf.Clamp(target.Params.Agi - this.Params.Dex + 20, 0, 95);
                 if (isHit)
                 {
-                    var damage = Mathf.Max(1, (int)((this.Atk - target.Def / 2) * UnityEngine.Random.Range(0.95f, 1.05f)));
+                    var damage = Mathf.Max(1, (int)((this.Atk + this.WeaponAtk - target.Def / 2) * UnityEngine.Random.Range(0.95f, 1.05f)));
                     target.ReduceHP(damage);
-                    action.SubActions.Add(new CharacterDamaged(target, this, damage, true, target.IsDeath));
+                    action.SubActions.Add(new CharacterDamagedAction(target, this, damage, true, target.IsDeath));
+                    //相手死亡判定
+                    if (target.IsDeath)
+                    {
+                        action.SubActions.AddRange(KillCharacter(target));
+                    }
                 }
                 else
                 {
-                    action.SubActions.Add(new CharacterDamaged(target, this, 0, false, false));
+                    action.SubActions.Add(new CharacterDamagedAction(target, this, 0, false, false));
                 }
             }
 
@@ -178,13 +186,21 @@ namespace Assets.Script.Model
         }
 
         /// <summary>
+        /// 攻撃で誰かを倒したときの処理
+        /// </summary>
+        protected virtual List<CharacterAction> KillCharacter(Character target)
+        {
+            return new List<CharacterAction>();
+        }
+
+        /// <summary>
         /// アイテムを拾う処理
         /// </summary>
         public bool PickUp(Item item)
         {
             var result = PickUpCore(item);
-            ReservedActions.Add(new CharacterItemPickup(this, item, result));//アイテム拾得行動情報を登録
-            return true;
+            ReservedActions.Add(new CharacterItemPickupAction(this, item, result));//アイテム拾得行動情報を登録
+            return result;
         }
 
         /// <summary>
@@ -202,13 +218,112 @@ namespace Assets.Script.Model
         public bool PutItem(Item item)
         {
             var result = PutItemCore(item);
-            ReservedActions.Add(new CharacterItemPut(this, item, result));//アイテム置いた処理を登録
+            ReservedActions.Add(new CharacterItemPutAction(this, item, result));//アイテム置いた処理を登録
             return result;
         }
 
         protected virtual bool PutItemCore(Item item)
         {
             return false;
+        }
+
+        /// <summary>
+        /// アイテムを投げる処理
+        /// </summary>
+        public virtual bool ThrowItem(Item item)
+        {
+            return ThrowItemCore(item);
+        }
+
+        public bool ThrowItemCore(Item item)
+        {
+            //矢弾の場合は１つずつ処理するので１個のオブジェクトを新たに生成
+            if(item.Category == ItemCategory.Arrow && item.CountValue > 1)
+            {
+                item = new Item(dungeon, item.MasterId, 1);
+            }
+
+            var targetPosition = this.Position;
+            var range = 10;//飛距離
+            var subActions = new List<CharacterAction>();
+            for (int i = 1; i <= range; i++)
+            {
+                targetPosition += this.Direction;
+                //画面外
+                if (targetPosition.x < 0 || targetPosition.x >= dungeon.MapSize.x || targetPosition.y < 0 || targetPosition.y >= dungeon.MapSize.y)
+                {
+                    Debug.LogFormat("{0}は彼方へと飛んでいった…", item.Name);
+                    break;
+                }
+                //壁
+                if (dungeon.MapData[targetPosition.x, targetPosition.y].Terra == Enums.Terrain.Wall)
+                {
+                    targetPosition -= this.Direction;
+                    item.DropFloor(targetPosition);
+                    break;
+                }
+                //他のキャラ
+                var target = dungeon.Characters.Where(x => !x.IsDeath).FirstOrDefault(x => x.Position == targetPosition);
+                if (target != null)
+                {
+                    //命中判定
+                    var isHit = (int)UnityEngine.Random.Range(0, 100) >= Mathf.Clamp(target.Params.Agi - this.Params.Dex + 20, 0, 95);
+                    if (isHit)
+                    {
+                        // 命中処理（targetのアイテムをぶつけられた処理呼び出し）
+                        subActions.AddRange(target.HitItem(item, this));
+                        Debug.LogFormat("{0}は{1}に命中した", item.Name, target.Name);
+                        //相手死亡判定
+                        if (target.IsDeath)
+                        {
+                            subActions.AddRange(KillCharacter(target));
+                        }
+                    }
+                    else
+                    {
+                        item.DropFloor(targetPosition);
+                    }
+                    break;
+                }
+                //何もぶつからずに飛距離終わり
+                if (i == range)
+                {
+                    item.DropFloor(targetPosition);
+                }
+            }
+            var action = new CharacterThrowAction(this, item, targetPosition);
+            action.SubActions.AddRange(subActions);
+            this.ReservedActions.Add(action);
+
+            return true;
+        }
+
+        /// <summary>
+        /// アイテムをぶつけられたときの処理
+        /// </summary>
+        /// <param name="item">アイテム</param>
+        /// <param name="thrower">投げた人</param>
+        public List<CharacterAction> HitItem(Item item, Character thrower)
+        {
+            var actions = new List<CharacterAction>();
+
+            //アイテム種類ごとの効果
+            if (item.Category == ItemCategory.Weapon
+                || item.Category == ItemCategory.Arrow)
+            {
+                var damage = Mathf.Max(1, (int)((thrower.Atk + item.Powor - this.Def / 2) * UnityEngine.Random.Range(0.95f, 1.05f)));
+                this.ReduceHP(damage);
+                actions.Add(new CharacterDamagedAction(this, thrower, damage, true, this.IsDeath));
+            }
+            else
+            {
+                //デフォルトは固定ダメージ
+                var damage = 1;
+                this.ReduceHP(damage);
+                actions.Add(new CharacterDamagedAction(this, thrower, damage, true, this.IsDeath));
+            }
+
+            return actions;
         }
 
         public virtual void SetPosition(Form position)
@@ -229,7 +344,7 @@ namespace Assets.Script.Model
         {
             if (Presenter == null) return;
 
-            Presenter.transform.localPosition = new Vector3(Position.x * 32 + 2, Position.y * -32, 0);
+            Presenter.transform.localPosition = new Vector3(Position.x * DungeonConstants.MAPTIP_PIXCEL_SIZE + 2, Position.y * -DungeonConstants.MAPTIP_PIXCEL_SIZE, 0);
             this.Presenter.Sprite.sortingOrder = 500 + this.Position.y;
         }
 
@@ -239,18 +354,18 @@ namespace Assets.Script.Model
         /// <returns></returns>
         public IObservable<Unit> MovingAnimation()
         {
-            var actions = ReservedActions.Select(x => x as CharacterMove).Where(x => x != null).ToArray();
+            var actions = ReservedActions.Select(x => x as CharacterMoveAction).Where(x => x != null).ToArray();
             if (!actions.Any())
                 return Observable.ReturnUnit();
-            var frame = DungeonConstants.MOVING_ANIMATION_FRAME / actions.Count();
+            var frame = DungeonConstants.MOVING_ANIMATION_FRAME / actions.Count() - Mathf.Clamp(actions.Count() - 1, 0, 1);//※２回行動の奴がいると何故かずれるので1f調整
             return actions.Select(x =>
             {
                 return Observable.EveryUpdate()
                     .Take(frame)
                     .Do(i => this.Presenter.transform.localPosition = 
                         new Vector3(
-                            (x.FromPosition.x + (x.DesPosition.x - x.FromPosition.x) * (float)(i + 1) / frame) * 32 + 2, 
-                            (x.FromPosition.y + (x.DesPosition.y - x.FromPosition.y) * (float)(i + 1) / frame) * -32, 
+                            (x.FromPosition.x + (x.DesPosition.x - x.FromPosition.x) * (float)(i + 1) / frame) * DungeonConstants.MAPTIP_PIXCEL_SIZE + 2, 
+                            (x.FromPosition.y + (x.DesPosition.y - x.FromPosition.y) * (float)(i + 1) / frame) * -DungeonConstants.MAPTIP_PIXCEL_SIZE, 
                             0
                         ));
             })
@@ -265,7 +380,7 @@ namespace Assets.Script.Model
         /// </summary>
         public IObservable<Unit> AllReservedActionAnimations()
         {
-            var actions = ReservedActions.Where(x => x as CharacterMove == null).ToArray();
+            var actions = ReservedActions.Where(x => x as CharacterMoveAction == null).ToArray();
             return ActionAnimations(actions);
         }
 
@@ -276,13 +391,15 @@ namespace Assets.Script.Model
             var actionList = new List<IObservable<Unit>>();
             foreach (var action in actions)
             {
-                var attackAction = action as CharacterAttack;
+                //攻撃
+                var attackAction = action as CharacterAttackAction;
                 if (attackAction != null)
                 {
                     actionList.Add(AttackAnimation(attackAction));
                     continue;
                 }
-                var pickupAction = action as CharacterItemPickup;
+                //拾う
+                var pickupAction = action as CharacterItemPickupAction;
                 if (pickupAction != null)
                 {
                     actionList.Add(Observable.Defer(() =>
@@ -295,7 +412,8 @@ namespace Assets.Script.Model
                     }));
                     continue;
                 }
-                var putAction = action as CharacterItemPut;
+                //置く
+                var putAction = action as CharacterItemPutAction;
                 if (putAction != null)
                 {
                     actionList.Add(Observable.Defer(() =>
@@ -308,7 +426,15 @@ namespace Assets.Script.Model
                     }));
                     continue;
                 }
-                var drinkAction = action as CharacterDrinkPotion;
+                //投げる
+                var throwAction = action as CharacterThrowAction;
+                if (throwAction != null)
+                {
+                    actionList.Add(ThrowAnimation(throwAction));
+                    continue;
+                }
+                //飲む
+                var drinkAction = action as CharacterDrinkPotionAction;
                 if(drinkAction != null)
                 {
                     actionList.Add(Observable.Defer(() =>
@@ -318,8 +444,9 @@ namespace Assets.Script.Model
                     })
                     .SelectMany(ActionAnimations(drinkAction.SubActions.ToArray()))
                     .Last());
+                    continue;
                 }
-                actionList.Add(Observable.ReturnUnit());
+                //メッセージ
                 var messageAction = action as MessageAction;
                 if (messageAction != null)
                 {
@@ -328,7 +455,10 @@ namespace Assets.Script.Model
                         StaticData.Message.ShowMessage(messageAction.Message, messageAction.IsWait);
                         return Observable.ReturnUnit();
                     }));
+                    continue;
                 }
+                //該当なし
+                actionList.Add(Observable.ReturnUnit());
             }
             return actionList.Concat().Last();
         }
@@ -336,7 +466,7 @@ namespace Assets.Script.Model
         /// <summary>
         /// 攻撃アニメーション
         /// </summary>
-        private IObservable<Unit> AttackAnimation(CharacterAttack action)
+        private IObservable<Unit> AttackAnimation(CharacterAttackAction action)
         {
             var frame = 16;
             var attackAnimation = Observable.EveryUpdate()
@@ -350,8 +480,8 @@ namespace Assets.Script.Model
                     var move = action.Direction * dis;
                     this.Presenter.transform.localPosition =
                         new Vector3(
-                            this.Position.x * 32 + 2 + move.x,
-                            this.Position.y * -32 - move.y,
+                            this.Position.x * DungeonConstants.MAPTIP_PIXCEL_SIZE + 2 + move.x,
+                            this.Position.y * -DungeonConstants.MAPTIP_PIXCEL_SIZE - move.y,
                             0);
                 })
                 .Last()
@@ -360,12 +490,64 @@ namespace Assets.Script.Model
                 .SelectMany(_ =>
                 {
                     return action.SubActions
-                        .Where(x => x as CharacterDamaged != null)
-                        .Select(x => DamageAnimation(x as CharacterDamaged))
+                        .Where(x => x as CharacterDamagedAction != null)
+                        .Select(x => DamageAnimation(x as CharacterDamagedAction))
                         .Concat();
                 });
+            var otherAnimation = ActionAnimations(action.SubActions.Where(x => x as CharacterDamagedAction == null).ToArray());
 
-            return Observable.WhenAll(attackAnimation, damageAnimation);
+            return Observable.WhenAll(attackAnimation, damageAnimation)
+                    .SelectMany(otherAnimation).Last();
+        }
+
+        /// <summary>
+        /// アイテムを投げるアクション
+        /// </summary>
+        public IObservable<Unit> ThrowAnimation(CharacterThrowAction action)
+        {
+            var dis = action.TargetPosition - action.Character.Position;
+            var basePosition = this.Presenter.transform.localPosition;
+            var noGameObject = action.TargetItem.Presenter == null;
+            var frame = Mathf.Max(Mathf.Abs(dis.x), Mathf.Abs(dis.y)) * 3 + 2;
+            var throwAction = Observable.Defer(() =>
+                {
+                    if (noGameObject)
+                    {
+                        //オブジェクトがない場合は表示用に生成
+                        action.TargetItem.InstantiateObject(dungeon.DungeonPrefabs.ObjectPrefab, dungeon.ObjectRoot);
+                    }
+                    action.TargetItem.Presenter.transform.localPosition = basePosition;
+                    return Observable.EveryUpdate();
+                })
+                .Take(frame)
+                .Do(i =>
+                {
+                    // アイテムが飛んでくアニメーション
+                    action.TargetItem.Presenter.transform.localPosition = basePosition + new Vector3(dis.x * DungeonConstants.MAPTIP_PIXCEL_SIZE * i / frame, -dis.y * DungeonConstants.MAPTIP_PIXCEL_SIZE * i / frame);
+                })
+                .Last()
+                .Do(_ =>
+                {
+                    if (noGameObject)
+                    {
+                        //表示用に作ったやつの後片付け
+                        GameObject.Destroy(action.TargetItem.Presenter.gameObject);
+                    }
+                    else
+                    {
+                        //オブジェクトがあるのは床落ちなので表示位置リセットして終了
+                        action.TargetItem.ResetViewPotition();
+                    }
+                })
+                .AsUnitObservable();
+            var damageAnimation = action.SubActions
+                        .Where(x => x as CharacterDamagedAction != null)
+                        .Select(x => DamageAnimation(x as CharacterDamagedAction))
+                        .Concat();
+            var otherAnimation = ActionAnimations(action.SubActions.Where(x => x as CharacterDamagedAction == null).ToArray());
+
+            return throwAction.Concat(damageAnimation).Last()
+                    .SelectMany(otherAnimation).Last();
         }
 
         /// <summary>
@@ -373,7 +555,7 @@ namespace Assets.Script.Model
         /// </summary>
         /// <param name="action"></param>
         /// <returns></returns>
-        public IObservable<Unit> DamageAnimation(CharacterDamaged action)
+        public IObservable<Unit> DamageAnimation(CharacterDamagedAction action)
         {
             if (!action.IsHit)
             {
@@ -430,6 +612,13 @@ namespace Assets.Script.Model
         public void ResetActions()
         {
             ReservedActions.Clear();
+        }
+
+        /// <summary>
+        /// １回の行動ループ終了時の後処理
+        /// </summary>
+        public virtual void TurnEndEvent()
+        {
         }
 
         /// <summary>
@@ -523,7 +712,7 @@ namespace Assets.Script.Model
     /// <summary>
     /// 移動アクション
     /// </summary>
-    public class CharacterMove : CharacterAction
+    public class CharacterMoveAction : CharacterAction
     {
         //移動先
         public Form FromPosition;
@@ -533,7 +722,7 @@ namespace Assets.Script.Model
         /// コンストラクタ
         /// </summary>
         /// <param name="des">移動先座標</param>
-        public CharacterMove(Character self, Form from, Form des) : base(self)
+        public CharacterMoveAction(Character self, Form from, Form des) : base(self)
         {
             FromPosition = from;
             DesPosition = des;
@@ -543,13 +732,13 @@ namespace Assets.Script.Model
     /// <summary>
     /// 攻撃アクション
     /// </summary>
-    public class CharacterAttack : CharacterAction
+    public class CharacterAttackAction : CharacterAction
     {
         //向き
         public Form Direction;
         public List<CharacterAction> SubActions { get; private set; }
 
-        public CharacterAttack(Character self, Form dir) : base(self)
+        public CharacterAttackAction(Character self, Form dir) : base(self)
         {
             Direction = dir;
             SubActions = new List<CharacterAction>();
@@ -559,7 +748,7 @@ namespace Assets.Script.Model
     /// <summary>
     /// アイテムを拾うアクション
     /// </summary>
-    public class CharacterItemPickup : CharacterAction
+    public class CharacterItemPickupAction : CharacterAction
     {
         //対象のアイテム
         public Item TargetItem;
@@ -570,7 +759,7 @@ namespace Assets.Script.Model
         /// </summary>
         /// <param name="item">対象のアイテム</param>
         /// <param name="isSuccess">拾えたかどうか</param>
-        public CharacterItemPickup(Character self, Item item, bool isSuccess) : base(self)
+        public CharacterItemPickupAction(Character self, Item item, bool isSuccess) : base(self)
         {
             TargetItem = item;
             IsSuccess = isSuccess;
@@ -580,7 +769,7 @@ namespace Assets.Script.Model
     /// <summary>
     /// アイテムを置くアクション
     /// </summary>
-    public class CharacterItemPut : CharacterAction
+    public class CharacterItemPutAction : CharacterAction
     {
         //対象のアイテム
         public Item TargetItem;
@@ -591,7 +780,7 @@ namespace Assets.Script.Model
         /// </summary>
         /// <param name="item">対象のアイテム</param>
         /// <param name="isSuccess">置けたかどうか</param>
-        public CharacterItemPut(Character self, Item item, bool isSuccess) : base(self)
+        public CharacterItemPutAction(Character self, Item item, bool isSuccess) : base(self)
         {
             TargetItem = item;
             IsSuccess = isSuccess;
@@ -599,13 +788,30 @@ namespace Assets.Script.Model
     }
 
     /// <summary>
+    /// アイテムを投げるアクション
+    /// </summary>
+    public class CharacterThrowAction : CharacterAction
+    {
+        public Item TargetItem;
+        public Form TargetPosition; 
+        public List<CharacterAction> SubActions { get; private set; }
+
+        public CharacterThrowAction(Character self, Item item, Form targetPosition) : base(self)
+        {
+            TargetItem = item;
+            TargetPosition = targetPosition;
+            SubActions = new List<CharacterAction>();
+        }
+    }
+
+    /// <summary>
     /// ポーションを使うアクション
     /// </summary>
-    public class CharacterDrinkPotion : CharacterAction
+    public class CharacterDrinkPotionAction : CharacterAction
     {
         public Item TargetItem;
         public List<CharacterAction> SubActions { get; private set; }
-        public CharacterDrinkPotion(Character self, Item item) : base(self)
+        public CharacterDrinkPotionAction(Character self, Item item) : base(self)
         {
             TargetItem = item;
             SubActions = new List<CharacterAction>();
@@ -629,20 +835,29 @@ namespace Assets.Script.Model
     /// <summary>
     /// ダメージを受けたアクション
     /// </summary>
-    public class CharacterDamaged : CharacterAction
+    public class CharacterDamagedAction : CharacterAction
     {
         public Character Attacker { get; private set; }
         public int Point { get; private set; }
         public bool IsHit { get; private set; }
         public bool IsDeath { get; private set; }
 
-        public CharacterDamaged(Character self, Character attacker, int point, bool isHit, bool isDeath) : base(self)
+        public CharacterDamagedAction(Character self, Character attacker, int point, bool isHit, bool isDeath) : base(self)
         {
             this.Attacker = attacker;
             this.Point = point;
             this.IsHit = isHit;
             this.IsDeath = isDeath;
         }
+    }
+
+    /// <summary>
+    /// ステータス変化クラス
+    /// </summary>
+    public class CharacterStatusEffect
+    {
+        public StatusEffectType Type { get; set; }
+        public int Value { get; set; }
     }
 
     public class DirectionManager

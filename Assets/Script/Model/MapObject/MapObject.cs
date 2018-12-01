@@ -66,7 +66,7 @@ namespace Assets.Script.Model
         {
             if (Presenter == null) return;
 
-            Presenter.transform.localPosition = new Vector3(Position.x * 32, Position.y * -32, 0);
+            Presenter.transform.localPosition = new Vector3(Position.x * DungeonConstants.MAPTIP_PIXCEL_SIZE, Position.y * -DungeonConstants.MAPTIP_PIXCEL_SIZE, 0);
             this.Presenter.Sprite.sortingOrder = 100 + this.Position.y;
         }
     }

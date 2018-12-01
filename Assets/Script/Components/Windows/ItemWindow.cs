@@ -18,6 +18,11 @@ namespace Assets.Script.Components
 
         public List<ItemWindowRow> Rows = new List<ItemWindowRow>();
 
+        public void Initialize(Dungeon dungeon)
+        {
+            ItemCommandWindow.Initialize(dungeon);
+        }
+
         public override void ShowWindow()
         {
             UpdateList();

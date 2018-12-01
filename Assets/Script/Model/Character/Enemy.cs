@@ -1,4 +1,5 @@
-﻿using Assets.Script.Enums;
+﻿using Assets.Script.Database;
+using Assets.Script.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,21 +13,28 @@ namespace Assets.Script.Model
         protected override CharacterParams Params { get { return _params; } }
         private EnemyParams _params;
         public override CharacterType Type { get { return CharacterType.Enemy; } }
-        public EnemyType EnemyType { get; set; }
-        private Form destination;
+        public EnemyId EnemyId { get; set; }
+        public EnemyMaster Master { get; set; }
+        public int HasExp { get { return Master.HasExp; } }
 
-        public Enemy(Dungeon _dungeon, EnemyType type) : base(_dungeon)
+        private Form destination;
+        //速度と行動回数が違うキャラ用
+        private int actionCount;
+        private bool isActioned { get { return Master.MaxActionCount != 0 && actionCount >= Master.MaxActionCount; } }//未設定(0)の時は使用しない
+
+        public Enemy(Dungeon _dungeon, EnemyId id) : base(_dungeon)
         {
             _params = new EnemyParams();
-            EnemyType = type;
+            EnemyId = id;
+            Master = DataBase.EnemyMasters[id];
 
-            //TODO: 種類ごとのパラメータ取得
-            Params.Name = "Noname";
-            HP = 10;
-            MaxHP = 5;
-            Speed = 8;
-            Params.Str = 0;
-            Params.Vit = 0;
+            //マスタからパラメータ取得
+            Params.Name = Master.Name;
+            HP = Master.HP;
+            MaxHP = Master.HP;
+            Speed = Master.Speed;
+            Params.Str = Master.Str;
+            Params.Vit = Master.Vit;
             Params.Dex = 0;
             Params.Agi = 0;
 
@@ -104,12 +112,18 @@ namespace Assets.Script.Model
 
             //行動処理
             {
-                //攻撃
+                //行動済み判定
+                if (isActioned)
+                {
+                    return;
+                }
+                //隣接時行動
                 if (isAdjacent && !CheckWallForAction(destination))
                 {
                     //隣接してたら攻撃
                     this.SetDirection(dungeon.Player.Position - this.Position);
                     this.Attack();
+                    this.actionCount++;
                     return;
                 }
                 //移動
@@ -152,6 +166,14 @@ namespace Assets.Script.Model
         {
             var currentRoom = this.GetCurrentRoom();
             return currentRoom != null && dungeon.Player.GetCurrentRoomAround() == currentRoom;
+        }
+
+        /// <summary>
+        /// １回の行動ループ終了時の後処理
+        /// </summary>
+        public override void TurnEndEvent()
+        {
+            actionCount = 0;
         }
 
         /// <summary>

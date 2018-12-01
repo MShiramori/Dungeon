@@ -45,7 +45,7 @@ namespace Assets.Script.Scene
             StaticData.Message = new Message(MessageText);
 
             //ウィンドウクラス初期化
-            WindowRoot.Initialize();
+            WindowRoot.Initialize(dungeon);
 
             mode = InputMode.Waiting;
             inputWait = 3;
@@ -58,6 +58,7 @@ namespace Assets.Script.Scene
             {
                 if (Input.GetKey(KeyCode.Z))
                 {
+                    //TODO: アクションのObservableの中に入れないと固まるので要修正
                     StaticData.Message.OnInput();
                 }
             }
@@ -163,8 +164,8 @@ namespace Assets.Script.Scene
                             {
                                 chara.ResetActions();
                                 chara.ResetViewPotition();
+                                chara.TurnEndEvent();
                             }
-                            dungeon.Player.IsAction = false;
                             mode = InputMode.Waiting;//終わったので入力待機に戻す
                         })
                         .Subscribe()

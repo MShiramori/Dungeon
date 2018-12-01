@@ -12,7 +12,7 @@ namespace Assets.Script.Model
     public class Player : Character
     {
         protected override CharacterParams Params { get { return StaticData.PlayerParams; } }
-        public override int Atk
+        public override int WeaponAtk
         {
             get
             {
@@ -22,7 +22,7 @@ namespace Assets.Script.Model
                 {
                     if (weapon != null) weaponAtk = weapon.Powor + weapon.CountValue;
                 }
-                return base.Atk + weaponAtk;
+                return weaponAtk;
             }
         }
         public override int Def
@@ -171,6 +171,25 @@ namespace Assets.Script.Model
             dungeon.MainCamera.transform.localPosition = new Vector3(this.Presenter.transform.localPosition.x, this.Presenter.transform.localPosition.y, 0);
         }
 
+        protected override List<CharacterAction> KillCharacter(Character target)
+        {
+            var exp = 0;
+            var enemy = target as Enemy;
+            if (enemy != null)
+            {
+                exp = enemy.HasExp;
+            }
+            var beforLevel = this.Level;
+            this.AddExp(exp);
+            var subActions = new List<CharacterAction>();
+            subActions.Add(new MessageAction(this, string.Format("{0}の経験値を獲得", exp), false));
+            if (this.Level > beforLevel)
+            {
+                subActions.Add(new MessageAction(this, string.Format("レベル{0}へようこそ", this.Level), false));
+            }
+            return subActions;
+        }
+
         protected override bool PickUpCore(Item item)
         {
             if(item.Position == this.Position && this.Items.Count < MAX_ITEM_COUNT)
@@ -211,6 +230,44 @@ namespace Assets.Script.Model
             return true;
         }
 
+        public override bool ThrowItem(Item item)
+        {
+            //持ってない
+            if (!Items.Contains(item))
+                return false;
+
+            var result = ThrowItemCore(item);
+            if (result)
+            {
+                //アイテムを持ち物から消去or矢弾なら数を減らす
+                if (item.Category == ItemCategory.Arrow)
+                {
+                    if (item.CountValue > 1)
+                    {
+                        item.CountValue--;
+                    }
+                    else
+                    {
+                        if (Equips.ContainsKey(item.Category) && Equips[item.Category] == item)
+                        {
+                            Equips[item.Category] = null;
+                        }
+                        Items.Remove(item);
+                    }
+                }
+                else
+                {
+                    if (Equips.ContainsKey(item.Category) && Equips[item.Category] == item)
+                    {
+                        Equips[item.Category] = null;
+                    }
+                    Items.Remove(item);
+                }
+            }
+            this.IsAction |= result;
+            return result;
+        }
+
         /// <summary>
         /// アイテムを装備する
         /// 装備中のアイテムが選択された場合は外す
@@ -247,6 +304,7 @@ namespace Assets.Script.Model
 
         /// <summary>
         /// ポーションを飲む
+        /// TODO: 効果をdelegate化してマスタに突っ込む？
         /// </summary>
         public bool DrinkPotion(Item item)
         {
@@ -255,7 +313,7 @@ namespace Assets.Script.Model
                 return false;
             }
 
-            var action = new CharacterDrinkPotion(this, item);
+            var action = new CharacterDrinkPotionAction(this, item);
             var effectType = (item.Master as PotionMaster).EffectType;
             switch (effectType)
             {
@@ -290,7 +348,15 @@ namespace Assets.Script.Model
                 case PotionEffectType.Lvアップ:
                     if (this.AddLevel(1))
                     {
-                        action.SubActions.Add(new MessageAction(this, string.Format("レベル{0}へようこそ", this.Level), true));
+                        action.SubActions.Add(new MessageAction(this, string.Format("レベル{0}へようこそ", this.Level), false));
+                    }
+                    break;
+
+                case PotionEffectType.Lvダウン:
+                    if (this.AddLevel(-1))
+                    {
+                        action.SubActions.Add(new MessageAction(this, string.Format("体から力が抜けていく…"), true));
+                        action.SubActions.Add(new MessageAction(this, string.Format("{0}はレベル{1}になった", this.Name, this.Level), false));
                     }
                     break;
             }
@@ -313,6 +379,14 @@ namespace Assets.Script.Model
         public void SetCamera(Camera mainCamera)
         {
             dungeon.MainCamera = mainCamera;
+        }
+
+        /// <summary>
+        /// １回の行動ループ終了時の後処理
+        /// </summary>
+        public override void TurnEndEvent()
+        {
+            this.IsAction = false;
         }
 
         /// <summary>
