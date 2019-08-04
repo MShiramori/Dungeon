@@ -51,6 +51,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d927a6df6ef521144a6f6d159fc4f2a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  MapCellPrefab: {fileID: 1116576066712882, guid: 84bba3d9d9f49ae4f8733b71e59ce824,
+    type: 2}
   FloorPrefab: {fileID: 1126814716690486, guid: e624980726d7f5e49b290b07eaba1b0e,
     type: 2}
   WallPrefab: {fileID: 1035820384681992, guid: de147954a8191fe40a48350a394bcf89, type: 2}
@@ -60,3 +62,4 @@ MonoBehaviour:
     type: 2}
   ObjectPrefab: {fileID: 1803278197362628, guid: 1f29c18496e83ec41b1b745b910ce4d1,
     type: 2}
+  MaskPrefab: {fileID: 1708957091324670, guid: f0171689307e8e9428557a82d88e2ac8, type: 2}

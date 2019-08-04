@@ -106,7 +106,7 @@ namespace Assets.Script.Components
                 }));
             }
 
-            list.Add(Tuple.Create<string, Func<bool>>("投げる", () =>
+            list.Add(Tuple.Create<string, Func<bool>>(_model.Category == ItemCategory.Arrow ? "撃つ" : "投げる", () =>
             {
                 var result = _dungeon.Player.ThrowItem(_model);
                 CloseAllWindow();

@@ -16,6 +16,7 @@ namespace Assets.Script.Scene
         public Transform MapRoot;
         public Transform CharacterRoot;
         public Transform ObjectRoot;
+        public Transform MaskRoot;
         public DungeonPrefabs DungeonPrefabs;
         public HeaderUIPresenter HeaderUI;
         public Text MessageText;
@@ -35,6 +36,7 @@ namespace Assets.Script.Scene
             dungeon.MapRoot = this.MapRoot;
             dungeon.ObjectRoot = this.ObjectRoot;
             dungeon.CharacterRoot = this.CharacterRoot;
+            dungeon.MaskRoot = this.MaskRoot;
             dungeon.DungeonPrefabs = this.DungeonPrefabs;
             dungeon.Initialize();
 
@@ -151,6 +153,8 @@ namespace Assets.Script.Scene
                     
                     //プレイヤーの移動以外のアクションを実行
                     dungeon.Player.AllReservedActionAnimations()
+                        //マスク更新
+                        .Do(_=> dungeon.UpdateMaskImage())
                         //移動アニメ
                         .SelectMany(_ => Observable.WhenAll(dungeon.Characters.Select(x => x.MovingAnimation())))
                         .Do(_ => dungeon.StatusUpdateEventTrigger.OnNext(Unit.Default))//表示更新

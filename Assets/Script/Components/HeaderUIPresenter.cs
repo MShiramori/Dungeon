@@ -14,6 +14,7 @@ namespace Assets.Script.Components
         public Text FloorText;
         public Text LevelText;
         public Text HpText;
+        public Image HpGauge;
 
         private Dungeon dungeon;
 
@@ -30,6 +31,7 @@ namespace Assets.Script.Components
             FloorText.text = dungeon.Floor > 0 ? string.Format("{0}F", dungeon.Floor) : "";
             LevelText.text = player != null ? string.Format("Lv {0}", player.Level) : "";
             HpText.text = player != null ? string.Format("HP {0}/{1}", player.HP, player.MaxHP) : "";
+            HpGauge.fillAmount = player.HP == 0 ? 0 : (float)player.HP / player.MaxHP;
         }
     }
 }

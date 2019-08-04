@@ -8,10 +8,9 @@ namespace Assets.Script.Components
 {
     public class DungeonPrefabs : MonoBehaviour
     {
-        public GameObject FloorPrefab;
-        public GameObject WallPrefab;
-        public GameObject PassagePrefab;
+        public GameObject MapCellPrefab;
         public GameObject PlayerPrefab;
         public GameObject ObjectPrefab;
+        public GameObject MaskPrefab;
     }
 }

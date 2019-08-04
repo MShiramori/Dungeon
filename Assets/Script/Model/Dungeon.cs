@@ -17,6 +17,7 @@ namespace Assets.Script.Model
         public Room[] Rooms { get; private set; }
         public List<MapObject> Objects { get; private set; }
         public List<Character> Characters { get; private set; }
+        public List<MapMaskPresenter> Masks { get; private set; }
         public Player Player { get { return Characters.FirstOrDefault(x => x.Type == CharacterType.Player) as Player; } }
 
         public int Floor { get; private set; }
@@ -25,6 +26,7 @@ namespace Assets.Script.Model
         public Transform MapRoot { get; set; }
         public Transform ObjectRoot { get; set; }
         public Transform CharacterRoot { get; set; }
+        public Transform MaskRoot { get; set; }
         public DungeonPrefabs DungeonPrefabs { get; set; }
 
         public Subject<Unit> StatusUpdateEventTrigger { get; private set; }
@@ -33,6 +35,7 @@ namespace Assets.Script.Model
         {
             this.Objects = new List<MapObject>();
             this.Characters = new List<Character>();
+            this.Masks = new List<MapMaskPresenter>();
             this.StatusUpdateEventTrigger = new Subject<Unit>();
         }
 
@@ -46,6 +49,7 @@ namespace Assets.Script.Model
         {
             this.Objects.Clear();
             this.Characters.Clear();
+            this.Masks.Clear();
 
             var generator = new DungeonMapGenerator();
             generator.CreateMap(new Form(10, 10), new Form(4, 4), UnityEngine.Random.Range(5, 10));
@@ -89,6 +93,8 @@ namespace Assets.Script.Model
             for (int i = 0; i < charas.Length; i++) GameObject.Destroy(charas[i].gameObject);
             var objects = ObjectRoot.GetComponentsInChildren<SpriteRenderer>();
             for (int i = 0; i < objects.Length; i++) GameObject.Destroy(objects[i].gameObject);
+            var masks = MaskRoot.GetComponentsInChildren<SpriteRenderer>();
+            for (int i = 0; i < masks.Length; i++) GameObject.Destroy(masks[i].gameObject);
 
             //プレイヤー＆敵オブジェクト配置
             foreach (var chara in this.Characters)
@@ -102,8 +108,9 @@ namespace Assets.Script.Model
                 obj.InstantiateObject(DungeonPrefabs.ObjectPrefab, ObjectRoot);
             }
 
-            //マップ描画
+            //マップ描画＆マスク生成
             CreateMap();
+            UpdateMaskImage();
         }
 
         /// <summary>
@@ -115,15 +122,20 @@ namespace Assets.Script.Model
             {
                 for (int y = 0; y < this.MapSize.y; y++)
                 {
-                    GameObject obj;
-                    if (this.MapData[x, y].Terra == Enums.Terrain.Wall)
-                        obj = GameObject.Instantiate(DungeonPrefabs.WallPrefab);
-                    else if (this.MapData[x, y].Terra == Enums.Terrain.Passage)
-                        obj = GameObject.Instantiate(DungeonPrefabs.PassagePrefab);
-                    else
-                        obj = GameObject.Instantiate(DungeonPrefabs.FloorPrefab);
+                    //マップ描画
+                    var obj = GameObject.Instantiate(DungeonPrefabs.MapCellPrefab);
                     obj.transform.SetParent(MapRoot, false);
                     obj.transform.localPosition = new Vector3(x * DungeonConstants.MAPTIP_PIXCEL_SIZE, y * -DungeonConstants.MAPTIP_PIXCEL_SIZE, 0);
+                    var cell = obj.GetComponent<MapCellPresenter>();
+                    cell.Initialize(this, this.MapData[x, y]);
+
+                    //マスク
+                    var maskObj = GameObject.Instantiate(DungeonPrefabs.MaskPrefab);
+                    maskObj.transform.SetParent(MaskRoot, false);
+                    maskObj.transform.localPosition = obj.transform.localPosition;
+                    var mask = maskObj.GetComponent<MapMaskPresenter>();
+                    mask.Initialize(this, x, y);
+                    Masks.Add(mask);
                 }
             }
         }
@@ -190,6 +202,15 @@ namespace Assets.Script.Model
         {
             this.Floor = floor;
             StatusUpdateEventTrigger.OnNext(Unit.Default);
+        }
+
+        //マスク更新
+        public void UpdateMaskImage()
+        {
+            foreach(var mask in Masks)
+            {
+                mask.UpdateImage();
+            }
         }
     }
 }
