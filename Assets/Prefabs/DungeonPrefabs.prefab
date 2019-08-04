@@ -53,13 +53,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   MapCellPrefab: {fileID: 1116576066712882, guid: 84bba3d9d9f49ae4f8733b71e59ce824,
     type: 2}
-  FloorPrefab: {fileID: 1126814716690486, guid: e624980726d7f5e49b290b07eaba1b0e,
-    type: 2}
-  WallPrefab: {fileID: 1035820384681992, guid: de147954a8191fe40a48350a394bcf89, type: 2}
-  PassagePrefab: {fileID: 1607628898907860, guid: 073afb36c7717f34db41432afd3c72f1,
-    type: 2}
   PlayerPrefab: {fileID: 1135122589730270, guid: 142a2da48c93b8d48848cbc53717f7c4,
     type: 2}
   ObjectPrefab: {fileID: 1803278197362628, guid: 1f29c18496e83ec41b1b745b910ce4d1,
     type: 2}
   MaskPrefab: {fileID: 1708957091324670, guid: f0171689307e8e9428557a82d88e2ac8, type: 2}
+  MaskCirclePrefab: {fileID: 1705988562767456, guid: 9ee43fce5de9424499fadd9d6ac023b3,
+    type: 2}
+  MaskRoomPrefab: {fileID: 1943820164754974, guid: 3eb957b946ad0cc4cab5cc0aaf0520af,
+    type: 2}
+  ShadowPrefab: {fileID: 1426733549375166, guid: 51b44246b4b6a6a478587b2e8890455a,
+    type: 2}

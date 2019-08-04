@@ -17,7 +17,8 @@ namespace Assets.Script.Model
         public Room[] Rooms { get; private set; }
         public List<MapObject> Objects { get; private set; }
         public List<Character> Characters { get; private set; }
-        public List<MapMaskPresenter> Masks { get; private set; }
+        public SpriteRenderer MaskCircle { get; private set; }
+        public SpriteRenderer MaskRoom { get; private set; }
         public Player Player { get { return Characters.FirstOrDefault(x => x.Type == CharacterType.Player) as Player; } }
 
         public int Floor { get; private set; }
@@ -35,7 +36,7 @@ namespace Assets.Script.Model
         {
             this.Objects = new List<MapObject>();
             this.Characters = new List<Character>();
-            this.Masks = new List<MapMaskPresenter>();
+            //this.Masks = new List<MapMaskPresenter>();
             this.StatusUpdateEventTrigger = new Subject<Unit>();
         }
 
@@ -49,7 +50,6 @@ namespace Assets.Script.Model
         {
             this.Objects.Clear();
             this.Characters.Clear();
-            this.Masks.Clear();
 
             var generator = new DungeonMapGenerator();
             generator.CreateMap(new Form(10, 10), new Form(4, 4), UnityEngine.Random.Range(5, 10));
@@ -108,8 +108,19 @@ namespace Assets.Script.Model
                 obj.InstantiateObject(DungeonPrefabs.ObjectPrefab, ObjectRoot);
             }
 
-            //マップ描画＆マスク生成
+            //マップ描画
             CreateMap();
+
+            //マスク生成
+            var shadow = GameObject.Instantiate(DungeonPrefabs.ShadowPrefab).GetComponent<SpriteRenderer>();
+            shadow.transform.localScale = new Vector2(MapSize.x, MapSize.y);
+            shadow.transform.localPosition = new Vector2(-16, 16);
+            shadow.transform.SetParent(MaskRoot, false);
+            this.MaskCircle = GameObject.Instantiate(DungeonPrefabs.MaskCirclePrefab).GetComponent<SpriteRenderer>();
+            this.MaskCircle.transform.SetParent(Player.Presenter.transform, false);
+            this.MaskCircle.transform.localPosition = new Vector2(-40, 40);
+            this.MaskRoom = GameObject.Instantiate(DungeonPrefabs.MaskRoomPrefab).GetComponent<SpriteRenderer>();
+            this.MaskRoom.transform.SetParent(MaskRoot, false);
             UpdateMaskImage();
         }
 
@@ -128,14 +139,6 @@ namespace Assets.Script.Model
                     obj.transform.localPosition = new Vector3(x * DungeonConstants.MAPTIP_PIXCEL_SIZE, y * -DungeonConstants.MAPTIP_PIXCEL_SIZE, 0);
                     var cell = obj.GetComponent<MapCellPresenter>();
                     cell.Initialize(this, this.MapData[x, y]);
-
-                    //マスク
-                    var maskObj = GameObject.Instantiate(DungeonPrefabs.MaskPrefab);
-                    maskObj.transform.SetParent(MaskRoot, false);
-                    maskObj.transform.localPosition = obj.transform.localPosition;
-                    var mask = maskObj.GetComponent<MapMaskPresenter>();
-                    mask.Initialize(this, x, y);
-                    Masks.Add(mask);
                 }
             }
         }
@@ -207,10 +210,14 @@ namespace Assets.Script.Model
         //マスク更新
         public void UpdateMaskImage()
         {
-            foreach(var mask in Masks)
+            var room = Player.GetCurrentRoom();
+            if (room != null)
             {
-                mask.UpdateImage();
+                MaskRoom.transform.localScale = new Vector2(room.Size.x + 1, room.Size.y + 1);
+                MaskRoom.transform.localPosition = new Vector2((room.Position.x - 1) * 32, (room.Position.y - 1) * -32);
             }
+            MaskCircle.gameObject.SetActive(room == null);
+            MaskRoom.gameObject.SetActive(room != null);
         }
     }
 }

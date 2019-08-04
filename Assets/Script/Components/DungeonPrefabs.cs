@@ -11,6 +11,8 @@ namespace Assets.Script.Components
         public GameObject MapCellPrefab;
         public GameObject PlayerPrefab;
         public GameObject ObjectPrefab;
-        public GameObject MaskPrefab;
+        public GameObject MaskCirclePrefab;
+        public GameObject MaskRoomPrefab;
+        public GameObject ShadowPrefab;
     }
 }
